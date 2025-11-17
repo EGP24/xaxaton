@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель администратора</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 24px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .tabs {
+            background: white;
+            padding: 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .tab-buttons {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab-btn:hover {
+            background: #fafafa;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-content h2 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input, select, textarea {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .list-container {
+            margin-top: 20px;
+            padding-bottom: 20px;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+            transition: background 0.2s;
+            gap: 15px;
+        }
+
+        .list-item:hover {
+            background: #f9f9f9;
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-blue {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .badge-green {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .badge-purple {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .day-column {
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            padding: 10px;
+            background: #fafafa;
+        }
+
+        .day-header {
+            font-weight: 600;
+            text-align: center;
+            padding: 8px;
+            background: #667eea;
+            color: white;
+            border-radius: 3px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
+        .lesson-card {
+            background: white;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+            font-size: 11px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .lesson-card > div {
+            margin-bottom: 4px;
+        }
+
+        .lesson-time {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .week-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .week-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .week-btn.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-content form {
+            margin-top: 20px;
+        }
+
+        .modal-content .form-group {
+            margin-bottom: 20px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .alert-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+
+        .alert-error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Панель администратора</h1>
+        <div class="user-info">
+            <span id="userName">Загрузка...</span>
+            <button class="logout-btn" onclick="window.location.href='/journal'" style="background: #667eea; margin-right: 10px;">Журнал</button>
+            <button class="logout-btn" onclick="logout()">Выход</button>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab-buttons">
+            <button class="tab-btn active" onclick="switchTab('students')">Студенты</button>
+            <button class="tab-btn" onclick="switchTab('groups')">Группы</button>
+            <button class="tab-btn" onclick="switchTab('disciplines')">Дисциплины</button>
+            <button class="tab-btn" onclick="switchTab('semesters')">Семестры</button>
+            <button class="tab-btn" onclick="switchTab('schedule')">Расписание</button>
+        </div>
+
+        <!-- Вкладка Студенты -->
+        <div id="students" class="tab-content active">
+            <h2>Управление студентами</h2>
+            <button class="btn btn-primary" onclick="openStudentModal()">Добавить студента</button>
+            <div class="list-container" id="studentsList"></div>
+        </div>
+
+        <!-- Вкладка Группы -->
+        <div id="groups" class="tab-content">
+            <h2>Управление группами</h2>
+            <button class="btn btn-primary" onclick="openGroupModal()">Добавить группу</button>
+            <div class="list-container" id="groupsList"></div>
+        </div>
+
+        <!-- Вкладка Дисциплины -->
+        <div id="disciplines" class="tab-content">
+            <h2>Управление дисциплинами</h2>
+            <button class="btn btn-primary" onclick="openDisciplineModal()">Добавить дисциплину</button>
+            <div class="list-container" id="disciplinesList"></div>
+        </div>
+
+        <!-- Вкладка Семестры -->
+        <div id="semesters" class="tab-content">
+            <h2>Управление семестрами</h2>
+            <button class="btn btn-primary" onclick="openSemesterModal()">Добавить семестр</button>
+            <div class="list-container" id="semestersList"></div>
+        </div>
+
+
+        <!-- Вкладка Расписание -->
+        <div id="schedule" class="tab-content">
+            <h2>Шаблоны расписания</h2>
+            <button class="btn btn-primary" onclick="openScheduleModal()">Добавить занятие</button>
+
+            <div class="week-selector">
+                <button class="week-btn active" onclick="selectWeek('odd')">Нечетная неделя</button>
+                <button class="week-btn" onclick="selectWeek('even')">Четная неделя</button>
+                <button class="week-btn" onclick="selectWeek('both')">Обе недели</button>
+            </div>
+
+            <div class="schedule-grid" id="scheduleGrid"></div>
+
+            <div style="margin-top: 20px;">
+                <button class="btn btn-success" onclick="generateInstances()">Сгенерировать занятия на семестр</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для студента -->
+    <div id="studentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Добавить студента</h2>
+                <button class="close-btn" onclick="closeModal('studentModal')">×</button>
+            </div>
+            <div id="studentAlert"></div>
+            <form id="studentForm">
+                <div class="form-group">
+                    <label>ФИО студента</label>
+                    <input type="text" id="studentName" required>
+                </div>
+                <div class="form-group">
+                    <label>Группа</label>
+                    <select id="studentGroup" required></select>
+                </div>
+                <button type="submit" class="btn btn-primary">Добавить</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно для группы -->
+    <div id="groupModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Добавить группу</h2>
+                <button class="close-btn" onclick="closeModal('groupModal')">×</button>
+            </div>
+            <div id="groupAlert"></div>
+            <form id="groupForm">
+                <div class="form-group">
+                    <label>Название группы</label>
+                    <input type="text" id="groupName" placeholder="например: ИВТ-301" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Добавить</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно для дисциплины -->
+    <div id="disciplineModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Добавить дисциплину</h2>
+                <button class="close-btn" onclick="closeModal('disciplineModal')">×</button>
+            </div>
+            <div id="disciplineAlert"></div>
+            <form id="disciplineForm">
+                <div class="form-group">
+                    <label>Название дисциплины</label>
+                    <input type="text" id="disciplineName" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Добавить</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно для семестра -->
+    <div id="semesterModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Добавить семестр</h2>
+                <button class="close-btn" onclick="closeModal('semesterModal')">×</button>
+            </div>
+            <div id="semesterAlert"></div>
+            <form id="semesterForm">
+                <div class="form-group">
+                    <label>Название семестра</label>
+                    <input type="text" id="semesterName" placeholder="например: Осень 2025" required>
+                </div>
+                <div class="form-group">
+                    <label>Дата начала</label>
+                    <input type="date" id="semesterStartDate" required>
+                </div>
+                <div class="form-group">
+                    <label>Дата окончания</label>
+                    <input type="date" id="semesterEndDate" required>
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="semesterIsActive" style="width: auto;">
+                        Сделать активным семестром
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary">Добавить</button>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Модальное окно для расписания -->
+    <div id="scheduleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Добавить занятие в расписание</h2>
+                <button class="close-btn" onclick="closeModal('scheduleModal')">×</button>
+            </div>
+            <div id="scheduleAlert"></div>
+            <form id="scheduleForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Дисциплина</label>
+                        <select id="scheduleDiscipline" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Преподаватель</label>
+                        <select id="scheduleTeacher" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Тип занятия</label>
+                        <select id="scheduleType" required>
+                            <option value="Л">Лекция</option>
+                            <option value="С">Семинар</option>
+                            <option value="ЛР">Лабораторная</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Аудитория</label>
+                        <input type="text" id="scheduleClassroom" required>
+                    </div>
+                    <div class="form-group">
+                        <label>День недели</label>
+                        <select id="scheduleDayOfWeek" required>
+                            <option value="0">Понедельник</option>
+                            <option value="1">Вторник</option>
+                            <option value="2">Среда</option>
+                            <option value="3">Четверг</option>
+                            <option value="4">Пятница</option>
+                            <option value="5">Суббота</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Тип недели</label>
+                        <select id="scheduleWeekType" required>
+                            <option value="both">Обе недели</option>
+                            <option value="odd">Нечетная</option>
+                            <option value="even">Четная</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Время начала</label>
+                        <input type="time" id="scheduleTimeStart" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Время окончания</label>
+                        <input type="time" id="scheduleTimeEnd" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Группы (можно выбрать несколько)</label>
+                    <select id="scheduleGroups" multiple required style="height: 120px;"></select>
+                </div>
+                <button type="submit" class="btn btn-primary">Добавить занятие</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/admin_panel.js"></script>
+</body>
+</html>
+
