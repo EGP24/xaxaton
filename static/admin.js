@@ -260,13 +260,27 @@ function buildJournalTable(students, schedulesByDate, recordsMap, allSchedules) 
 
     const sortedDates = Object.keys(schedulesByDate).sort();
 
+    // Сортируем пары в каждой дате по времени для правильного отображения
+    sortedDates.forEach(date => {
+        schedulesByDate[date].sort((a, b) => {
+            return a.time_start.localeCompare(b.time_start);
+        });
+    });
+
     let headerHtml = '<tr><th rowspan="2">Студент</th>';
 
+    // Первый уровень заголовка - даты с количеством пар в этот день
     sortedDates.forEach(date => {
         const lessonsCount = schedulesByDate[date].length;
         const dateObj = new Date(date + 'T00:00:00');
         const dateStr = dateObj.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
-        headerHtml += `<th colspan="${lessonsCount}" class="date-header">${dateStr}</th>`;
+
+        // Если несколько пар в один день - показываем расширенный заголовок
+        if (lessonsCount > 1) {
+            headerHtml += `<th colspan="${lessonsCount}" class="date-header" style="background: #764ba2 !important;">${dateStr} (${lessonsCount} пары)</th>`;
+        } else {
+            headerHtml += `<th colspan="${lessonsCount}" class="date-header">${dateStr}</th>`;
+        }
     });
 
     const lessonTypes = new Set();
@@ -278,28 +292,52 @@ function buildJournalTable(students, schedulesByDate, recordsMap, allSchedules) 
     headerHtml += `<th colspan="${lessonTypesArray.length + 1}" class="date-header">Средние оценки</th>`;
     headerHtml += '</tr><tr>';
 
+    // Второй уровень заголовка - отдельный столбец для каждой пары
     sortedDates.forEach(date => {
-        schedulesByDate[date].forEach(schedule => {
+        const schedulesInDay = schedulesByDate[date];
+
+        schedulesInDay.forEach((schedule, idx) => {
             const lessonType = schedule.lesson_type;
             const time = schedule.time_start;
+            const discipline = schedule.discipline;
+            const classroom = schedule.classroom;
 
-            let editIcon = '👁️';
+            let editIcon = '';
             let editText = 'Только просмотр';
 
             if (schedule.is_cancelled) {
-                editIcon = '';
+                editIcon = '❌ ';
                 editText = 'Занятие отменено';
             } else if (!schedule.is_past) {
-                editIcon = '';
+                editIcon = '🔒 ';
                 editText = 'Будущее занятие - редактирование недоступно';
             } else if (schedule.can_edit) {
-                editIcon = '';
+                editIcon = '✏️ ';
                 editText = 'Редактирование доступно';
             } else {
+                editIcon = '👁️ ';
                 editText = 'Занятие другого преподавателя';
             }
 
-            headerHtml += `<th class="lesson-subheader" title="${schedule.discipline} (${schedule.classroom}) - ${editText}">${lessonType} ${time}</th>`;
+            // Если несколько пар в один день - добавляем номер пары и полную информацию
+            let headerTitle = `${discipline} (${classroom}) - ${editText}`;
+            let headerText = '';
+
+            if (schedulesInDay.length > 1) {
+                // Несколько пар - показываем подробную информацию
+                const pairNumber = idx + 1;
+                headerText = `<div style="line-height: 1.3;">
+                    <div style="font-weight: 600;">#${pairNumber}</div>
+                    <div>${lessonType}</div>
+                    <div style="font-size: 10px; margin-top: 2px;">${time}</div>
+                    <div style="font-size: 9px; margin-top: 2px; opacity: 0.9;">${classroom}</div>
+                </div>`;
+            } else {
+                // Одна пара - стандартное отображение
+                headerText = `${lessonType}<br>${time}`;
+            }
+
+            headerHtml += `<th class="lesson-subheader" title="${headerTitle}" style="min-width: ${schedulesInDay.length > 1 ? '70px' : '80px'};">${editIcon}${headerText}</th>`;
         });
     });
 
@@ -325,8 +363,11 @@ function buildJournalTable(students, schedulesByDate, recordsMap, allSchedules) 
             const gradesByType = {};
             lessonTypesArray.forEach(type => gradesByType[type] = []);
 
+            // Генерируем ячейки для каждой даты - каждая пара = отдельная ячейка
             sortedDates.forEach(date => {
-                schedulesByDate[date].forEach(schedule => {
+                const schedulesInDay = schedulesByDate[date];
+
+                schedulesInDay.forEach((schedule, idx) => {
                     const key = `${student.id}_${schedule.id}`;
                     const record = recordsMap[key] || { status: null, grade: null };
                     const canEdit = canEditMap[schedule.id];
@@ -352,7 +393,12 @@ function buildJournalTable(students, schedulesByDate, recordsMap, allSchedules) 
                     const readonlyAttr = canEdit ? '' : 'readonly';
                     const disabledClass = canEdit ? '' : 'readonly-cell';
 
-                    bodyHtml += `<td class="status-cell ${disabledClass}">
+                    // Добавляем подсказку с информацией о паре
+                    const pairInfo = schedulesInDay.length > 1
+                        ? `Пара #${idx + 1}: ${schedule.discipline} (${schedule.classroom}) ${schedule.time_start}`
+                        : `${schedule.discipline} (${schedule.classroom})`;
+
+                    bodyHtml += `<td class="status-cell ${disabledClass}" title="${pairInfo}">
                         <input type="text" 
                                class="status-input ${cellClass}" 
                                value="${displayValue}" 

@@ -186,6 +186,25 @@
             background: #9575cd !important;
             font-size: 11px;
             font-weight: normal;
+            vertical-align: middle;
+            padding: 8px 4px;
+            border-right: 2px solid #764ba2;
+        }
+
+        .lesson-subheader:last-child {
+            border-right: 1px solid #ddd;
+        }
+
+        .lesson-subheader small {
+            display: block;
+            font-size: 9px;
+            margin-top: 2px;
+            opacity: 0.9;
+            font-weight: 600;
+        }
+
+        .lesson-subheader div {
+            line-height: 1.3;
         }
 
         .status-cell {
@@ -195,10 +214,17 @@
             position: relative;
             transition: background 0.2s;
             padding: 2px;
+            border-right: 1px solid #e0e0e0;
         }
 
         .status-cell:hover {
             background: #f0f0f0;
+        }
+
+        /* Визуальное разделение между датами */
+        .journal-table td:has(+ td[title*="Пара #1"]),
+        .journal-table td[title*="Пара #1"] ~ td:not([title*="Пара"]) {
+            border-left: 2px solid #764ba2;
         }
 
         .status-input {

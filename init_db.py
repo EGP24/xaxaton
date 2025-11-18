@@ -259,6 +259,130 @@ template6.groups.append(groups[0])
 templates.append(template6)
 db.add(template6)
 
+# ДЕМОНСТРАЦИЯ: Несколько пар в одно время (вторник 09:00 - подгруппы)
+# Подгруппа 1 - Программирование (лабораторная)
+template7 = ScheduleTemplate(
+    semester_id=semester.id,
+    discipline_id=disciplines[1].id,
+    classroom="Б-401",
+    teacher_id=teacher2.id,
+    lesson_type=LessonType.LAB,
+    day_of_week=DayOfWeek.TUESDAY.value,
+    time_start="11:00",
+    time_end="12:30",
+    week_type=WeekType.BOTH,
+    is_stream=False
+)
+template7.groups.append(groups[0])
+templates.append(template7)
+db.add(template7)
+
+# Подгруппа 2 - Веб-разработка (лабораторная) в то же время
+template8 = ScheduleTemplate(
+    semester_id=semester.id,
+    discipline_id=disciplines[4].id,
+    classroom="Б-402",
+    teacher_id=teacher2.id,
+    lesson_type=LessonType.LAB,
+    day_of_week=DayOfWeek.TUESDAY.value,
+    time_start="11:00",
+    time_end="12:30",
+    week_type=WeekType.BOTH,
+    is_stream=False
+)
+template8.groups.append(groups[0])
+templates.append(template8)
+db.add(template8)
+
+# ДЕМОНСТРАЦИЯ: Три пары в одно время (пятница 13:00)
+# Математика - подгруппа 1
+template9 = ScheduleTemplate(
+    semester_id=semester.id,
+    discipline_id=disciplines[0].id,
+    classroom="А-101",
+    teacher_id=teacher1.id,
+    lesson_type=LessonType.SEMINAR,
+    day_of_week=DayOfWeek.FRIDAY.value,
+    time_start="13:00",
+    time_end="14:30",
+    week_type=WeekType.ODD,
+    is_stream=False
+)
+template9.groups.append(groups[0])
+templates.append(template9)
+db.add(template9)
+
+# Алгоритмы - подгруппа 2
+template10 = ScheduleTemplate(
+    semester_id=semester.id,
+    discipline_id=disciplines[3].id,
+    classroom="А-102",
+    teacher_id=teacher1.id,
+    lesson_type=LessonType.SEMINAR,
+    day_of_week=DayOfWeek.FRIDAY.value,
+    time_start="13:00",
+    time_end="14:30",
+    week_type=WeekType.ODD,
+    is_stream=False
+)
+template10.groups.append(groups[0])
+templates.append(template10)
+db.add(template10)
+
+# Операционные системы - подгруппа 3
+template11 = ScheduleTemplate(
+    semester_id=semester.id,
+    discipline_id=disciplines[5].id,
+    classroom="А-103",
+    teacher_id=teacher3.id,
+    lesson_type=LessonType.SEMINAR,
+    day_of_week=DayOfWeek.FRIDAY.value,
+    time_start="13:00",
+    time_end="14:30",
+    week_type=WeekType.ODD,
+    is_stream=False
+)
+template11.groups.append(groups[0])
+templates.append(template11)
+db.add(template11)
+
+# ДЕМОНСТРАЦИЯ: Две пары ПРОГРАММИРОВАНИЯ в один день (понедельник)
+# Первая пара - лекция в 09:00 (уже есть как template1)
+# Вторая пара - практика в 12:00
+template12 = ScheduleTemplate(
+    semester_id=semester.id,
+    discipline_id=disciplines[1].id,
+    classroom="Б-403",
+    teacher_id=teacher2.id,
+    lesson_type=LessonType.SEMINAR,
+    day_of_week=DayOfWeek.MONDAY.value,
+    time_start="12:00",
+    time_end="13:30",
+    week_type=WeekType.BOTH,
+    is_stream=False
+)
+template12.groups.append(groups[0])
+templates.append(template12)
+db.add(template12)
+
+# ДЕМОНСТРАЦИЯ: Еще одна пара БАЗ ДАННЫХ в четверг
+# Уже есть одна в 15:00, добавим в 09:00
+template13 = ScheduleTemplate(
+    semester_id=semester.id,
+    discipline_id=disciplines[2].id,
+    classroom="Б-306",
+    teacher_id=teacher3.id,
+    lesson_type=LessonType.SEMINAR,
+    day_of_week=DayOfWeek.THURSDAY.value,
+    time_start="09:00",
+    time_end="10:30",
+    week_type=WeekType.BOTH,
+    is_stream=False
+)
+template13.groups.append(groups[0])
+templates.append(template13)
+db.add(template13)
+
 db.commit()
 print(f"📋 Создано {len(templates)} шаблонов расписания\n")
 
