@@ -80,13 +80,31 @@ async function loadStudents() {
             return;
         }
 
-        container.innerHTML = students.map(s => `
+        // Проверяем наличие фото для каждого студента
+        const studentsWithFaceStatus = await Promise.all(
+            students.map(async (s) => {
+                try {
+                    const faceStatus = await apiRequest(`/api/students/${s.id}/has-face`);
+                    return { ...s, hasFace: faceStatus.has_face };
+                } catch {
+                    return { ...s, hasFace: false };
+                }
+            })
+        );
+
+        container.innerHTML = studentsWithFaceStatus.map(s => `
             <div class="list-item">
                 <div>
                     <strong>${s.full_name}</strong>
                     <span class="badge badge-blue">${s.group_name}</span>
+                    ${s.hasFace ? '<span class="badge badge-success" title="Фото загружено">Фото</span>' : '<span class="badge badge-warning" title="Фото не загружено">Нет фото</span>'}
                 </div>
-                <button class="btn btn-danger" onclick="deleteStudent(${s.id})">Удалить</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-primary" onclick="openUploadFaceModal(${s.id}, '${s.full_name.replace(/'/g, "\\'")}')">
+                        ${s.hasFace ? 'Обновить фото' : 'Загрузить фото'}
+                    </button>
+                    <button class="btn btn-danger" onclick="deleteStudent(${s.id})">Удалить</button>
+                </div>
             </div>
         `).join('');
     } catch (error) {
@@ -529,6 +547,80 @@ async function generateInstances() {
 // Закрытие модального окна
 function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
+}
+
+// ============ ЗАГРУЗКА ФОТО СТУДЕНТА ============
+
+let currentStudentForFaceUpload = null;
+let selectedFaceFile = null;
+
+function openUploadFaceModal(studentId, studentName) {
+    currentStudentForFaceUpload = studentId;
+    document.getElementById('faceStudentName').textContent = studentName;
+    document.getElementById('facePreview').style.display = 'none';
+    document.getElementById('uploadFaceBtn').disabled = true;
+    selectedFaceFile = null;
+    document.getElementById('uploadFaceModal').classList.add('active');
+}
+
+// Обработка выбора файла для фото студента
+document.getElementById('faceFileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+        selectedFaceFile = file;
+
+        // Показываем превью
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const preview = document.getElementById('facePreview');
+            preview.src = event.target.result;
+            preview.style.display = 'block';
+            document.getElementById('uploadFaceBtn').disabled = false;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        alert('Пожалуйста, выберите изображение');
+    }
+});
+
+async function uploadStudentFace() {
+    if (!selectedFaceFile || !currentStudentForFaceUpload) {
+        alert('Выберите фото для загрузки');
+        return;
+    }
+
+    const btn = document.getElementById('uploadFaceBtn');
+    btn.disabled = true;
+    btn.textContent = 'Загрузка...';
+
+    try {
+        const formData = new FormData();
+        formData.append('file', selectedFaceFile);
+
+        const response = await fetch(`/api/students/${currentStudentForFaceUpload}/upload-face`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Ошибка загрузки');
+        }
+
+        const result = await response.json();
+        alert(result.message);
+        closeModal('uploadFaceModal');
+        loadStudents(); // Перезагружаем список студентов
+    } catch (error) {
+        console.error('Ошибка загрузки фото:', error);
+        alert('Ошибка: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Загрузить';
+    }
 }
 
 // Инициализация

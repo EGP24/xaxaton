@@ -1,16 +1,17 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Request, Form
+from fastapi import FastAPI, Depends, HTTPException, status, Request, Form, UploadFile, File
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import timedelta, date
-from typing import Optional
+from typing import Optional, List
 
 from database import get_db, engine
 from models import (Base, User, Student, Group, Discipline, Semester, ScheduleTemplate, ScheduleInstance,
                     StudentRecord, UserRole, LessonType, StudentStatus, WeekType)
 from auth import authenticate_user, create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
+from face_recognition_service import FaceRecognitionService
 
 Base.metadata.create_all(bind=engine)
 
@@ -19,6 +20,17 @@ app = FastAPI(title="University Journal System")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+# Инициализируем сервис распознавания лиц
+# Ленивая инициализация сервиса распознавания лиц
+face_service = None
+
+def get_face_service():
+    """Получить или создать экземпляр сервиса распознавания лиц"""
+    global face_service
+    if face_service is None:
+        from face_recognition_service import FaceRecognitionService
+        face_service = FaceRecognitionService(tolerance=0.6)
+    return face_service
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
@@ -619,6 +631,138 @@ async def generate_schedule_instances(
     db.commit()
 
     return {"success": True, "count": instances_count}
+
+
+# ============ API для распознавания лиц ============
+
+@app.post("/api/students/{student_id}/upload-face")
+async def upload_student_face(
+    student_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Загрузить фото студента для распознавания"""
+    check_admin(current_user)
+
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Студент не найден")
+
+    image_bytes = await file.read()
+    success = get_face_service().save_student_face(student_id, image_bytes, db)
+
+    if not success:
+        raise HTTPException(status_code=400, detail="Не удалось распознать лицо на фото")
+
+    return {"success": True, "message": f"Фото студента {student.full_name} успешно сохранено"}
+
+
+@app.post("/api/schedules/{schedule_id}/recognize-attendance")
+async def recognize_attendance(
+    schedule_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Распознать студентов на групповом фото и автоматически отметить посещаемость"""
+    schedule = db.query(ScheduleInstance).filter(ScheduleInstance.id == schedule_id).first()
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Занятие не найдено")
+
+    template = schedule.template
+    teacher_id = schedule.teacher_id if schedule.teacher_id else template.teacher_id
+
+    if current_user.role != UserRole.ADMIN and current_user.id != teacher_id:
+        raise HTTPException(status_code=403, detail="Нет прав для редактирования этого занятия")
+
+    group_ids = [g.id for g in template.groups]
+    students = db.query(Student).filter(Student.group_id.in_(group_ids)).all()
+
+    if not students:
+        raise HTTPException(status_code=404, detail="Студенты не найдены")
+
+    image_bytes = await file.read()
+    recognized_ids, total_faces = get_face_service().recognize_students(image_bytes, students)
+
+    updated_count = 0
+    for student in students:
+        record = db.query(StudentRecord).filter(
+            StudentRecord.student_id == student.id,
+            StudentRecord.schedule_instance_id == schedule_id
+        ).first()
+
+        if student.id in recognized_ids:
+            if record:
+                record.status = StudentStatus.AUTO_DETECTED
+            else:
+                record = StudentRecord(
+                    student_id=student.id,
+                    schedule_instance_id=schedule_id,
+                    status=StudentStatus.AUTO_DETECTED
+                )
+                db.add(record)
+            updated_count += 1
+        else:
+            if not record:
+                record = StudentRecord(
+                    student_id=student.id,
+                    schedule_instance_id=schedule_id,
+                    status=StudentStatus.ABSENT
+                )
+                db.add(record)
+
+    db.commit()
+
+    stats = get_face_service().get_recognition_stats(recognized_ids, total_faces, len(students))
+
+    return {
+        "success": True,
+        "recognized_count": len(recognized_ids),
+        "total_students": len(students),
+        "total_faces": total_faces,
+        "recognition_rate": f"{stats['recognition_rate'] * 100:.1f}%",
+        "updated_count": updated_count,
+        "stats": stats
+    }
+
+
+@app.get("/api/students/{student_id}/has-face")
+async def check_student_face(
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Проверить, загружено ли фото студента"""
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Студент не найден")
+
+    return {
+        "student_id": student_id,
+        "has_face": student.face_encoding is not None
+    }
+
+
+@app.get("/api/groups/{group_id}/face-stats")
+async def get_group_face_stats(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Получить статистику по загруженным фото студентов группы"""
+    students = db.query(Student).filter(Student.group_id == group_id).all()
+
+    total = len(students)
+    with_face = sum(1 for s in students if s.face_encoding is not None)
+
+    return {
+        "group_id": group_id,
+        "total_students": total,
+        "students_with_face": with_face,
+        "students_without_face": total - with_face,
+        "percentage": (with_face / total * 100) if total > 0 else 0
+    }
 
 
 if __name__ == "__main__":

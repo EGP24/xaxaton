@@ -209,6 +209,18 @@
             color: #7b1fa2;
         }
 
+        .badge-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            font-weight: 600;
+        }
+
+        .badge-warning {
+            background: #fff3e0;
+            color: #e65100;
+            font-weight: 600;
+        }
+
         .schedule-grid {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
@@ -574,7 +586,33 @@
         </div>
     </div>
 
-    <script src="/static/admin_panel.js"></script>
+    <!-- Модальное окно для загрузки фото студента -->
+    <div id="uploadFaceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Загрузка фото студента</h2>
+                <button class="close-btn" onclick="closeModal('uploadFaceModal')">×</button>
+            </div>
+            <p style="margin-bottom: 15px; color: #666;">
+                Студент: <strong id="faceStudentName"></strong>
+            </p>
+            <div class="form-group">
+                <label>Выберите фото лица студента</label>
+                <input type="file" id="faceFileInput" accept="image/*" style="margin-bottom: 15px;">
+                <p style="font-size: 12px; color: #999; margin-top: 5px;">
+                    Требования: четкое фото лица анфас, хорошее освещение, один человек на фото
+                </p>
+            </div>
+            <div style="text-align: center; margin: 20px 0;">
+                <img id="facePreview" style="max-width: 100%; max-height: 300px; border-radius: 8px; display: none;" alt="Preview">
+            </div>
+            <button id="uploadFaceBtn" class="btn btn-primary" onclick="uploadStudentFace()" disabled>
+                Загрузить
+            </button>
+        </div>
+    </div>
+
+    <script src="/static/admin_panel.js?v=2"></script>
 </body>
 </html>
 

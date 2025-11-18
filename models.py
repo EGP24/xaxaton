@@ -19,6 +19,7 @@ class StudentStatus(str, enum.Enum):
     PRESENT = "present"  # Присутствовал (не отображается, используется внутренне)
     ABSENT = "absent"    # Отсутствовал
     EXCUSED = "excused"  # Уважительная причина
+    AUTO_DETECTED = "auto_detected"  # Автоматически распознан на фото
 
 
 class WeekType(str, enum.Enum):
@@ -62,6 +63,7 @@ class Student(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     full_name = Column(String, index=True)
+    face_encoding = Column(String, nullable=True)  # JSON-строка с эмбеддингом лица
     group_id = Column(Integer, ForeignKey("groups.id"))
 
     group = relationship("Group", back_populates="students")

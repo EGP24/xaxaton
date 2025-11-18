@@ -188,11 +188,6 @@
             font-weight: normal;
             vertical-align: middle;
             padding: 8px 4px;
-            border-right: 2px solid #764ba2;
-        }
-
-        .lesson-subheader:last-child {
-            border-right: 1px solid #ddd;
         }
 
         .lesson-subheader small {
@@ -230,8 +225,8 @@
         .status-input {
             width: 100%;
             height: 100%;
-            border: none;
             text-align: center;
+            border: none;
             font-size: 14px;
             font-weight: bold;
             background: transparent;
@@ -330,6 +325,226 @@
             border-radius: 5px;
             border-left: 3px solid #667eea;
         }
+
+        .upload-photo-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: transform 0.2s;
+        }
+
+        .upload-photo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .upload-photo-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #333;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .upload-area:hover {
+            background: #f0f4ff;
+        }
+
+        .upload-area.dragging {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+
+        #photoPreview {
+            max-width: 100%;
+            max-height: 400px;
+            margin: 20px 0;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .recognize-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .recognize-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status-auto {
+            color: #4caf50;
+            background: #e8f5e9;
+            font-weight: bold;
+        }
+
+        .recognition-stats {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        .recognition-stats h3 {
+            margin: 0 0 10px 0;
+            color: #1976d2;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+
+        /* Стили для красивого календаря */
+        .date-picker-wrapper {
+            position: relative;
+        }
+
+        #selectDate {
+            width: 100%;
+            padding: 12px 40px 12px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+            color: #333;
+        }
+
+        #selectDate:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        #selectDate:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        #selectDate:disabled {
+            background: #f5f5f5;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* Иконка календаря */
+        .calendar-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            font-size: 18px;
+            color: #667eea;
+        }
+
+        .date-hint {
+            display: block;
+            color: #666;
+            font-size: 12px;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #f0f4ff;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+
+        .date-hint.warning {
+            background: #fff3e0;
+            border-left-color: #ff9800;
+            color: #e65100;
+        }
+
+        /* Стили для выбора пары */
+        #selectSchedule {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        #selectSchedule:hover:not(:disabled) {
+            border-color: #667eea;
+        }
+
+        #selectSchedule:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        #selectSchedule option:disabled {
+            color: #999;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -357,6 +572,11 @@
                         <option value="">Сначала выберите группу</option>
                     </select>
                 </div>
+                <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <button class="upload-photo-btn" id="uploadPhotoBtn" style="display: none;">
+                        📸 Загрузить фото аудитории
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -379,9 +599,66 @@
         </div>
         <div class="legend-item">
             <span class="legend-symbol status-excused">У</span>
-            <span>Уважительно</span>
+            <span>Уважительная причина</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-symbol status-auto">А</span>
+            <span>Автоматически распознан</span>
         </div>
     </div>
+
+    <!-- Модальное окно для загрузки фото -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📸 Загрузка фото аудитории</h2>
+                <span class="close">&times;</span>
+            </div>
+
+            <div class="form-group">
+                <label for="selectDate">Выберите дату:</label>
+                <div class="date-picker-wrapper">
+                    <input type="date" id="selectDate">
+                    <span class="calendar-icon">📅</span>
+                </div>
+                <small class="date-hint" id="dateHint">
+                    Выберите дату из календаря для просмотра доступных занятий
+                </small>
+            </div>
+
+            <div id="selectScheduleGroup" class="form-group" style="display: none;">
+                <label for="selectSchedule">Выберите пару:</label>
+                <select id="selectSchedule" style="width: 100%; margin-bottom: 15px;">
+                    <option value="">Выберите пару</option>
+                </select>
+            </div>
+
+            <div class="upload-area" id="uploadArea" style="display: none;">
+                <p>📁 Перетащите фото сюда или нажмите для выбора</p>
+            </div>
+            <img id="photoPreview" alt="Preview">
+            <div id="recognitionStats" class="recognition-stats" style="display: none;">
+                <h3>Результаты распознавания</h3>
+                <div class="stat-item">
+                    <span>Распознано студентов:</span>
+                    <strong id="recognizedCount">-</strong>
+                </div>
+                <div class="stat-item">
+                    <span>Всего лиц на фото:</span>
+                    <strong id="totalFaces">-</strong>
+                </div>
+                <div class="stat-item">
+                    <span>Процент распознавания:</span>
+                    <strong id="recognitionRate">-</strong>
+                </div>
+            </div>
+            <button id="recognizeBtn" class="recognize-btn" disabled>
+                🔍 Распознать и отметить посещаемость
+            </button>
+        </div>
+    </div>
+
+    <input type="file" id="photoInput" accept="image/*" style="display: none;">
 
     <script src="/static/admin.js"></script>
 </body>
