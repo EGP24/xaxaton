@@ -4,16 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Вход - Журнал университета</title>
+    <link rel="stylesheet" href="/static/global.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--gray-100);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -21,112 +15,143 @@
         }
 
         .login-container {
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            background: var(--bg-primary);
+            padding: var(--spacing-2xl);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
             width: 400px;
+            max-width: 90%;
         }
 
         h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 24px;
+            text-align: left;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xl);
+            font-size: var(--font-size-2xl);
+            font-family: var(--font-family-mono);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: var(--font-weight-bold);
         }
 
-        .form-group {
-            margin-bottom: 20px;
+        .system-label {
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            font-family: var(--font-family-mono);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: var(--spacing-sm);
         }
 
-        label {
+        .login-container .form-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .login-container label {
             display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 500;
+            margin-bottom: var(--spacing-sm);
+            color: var(--text-secondary);
+            font-weight: var(--font-weight-semibold);
+            font-size: var(--font-size-xs);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        input {
+        .login-container input {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: border-color 0.3s;
+            padding: 10px;
+            border: 1px solid var(--border-color-dark);
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-base);
+            transition: border-color 100ms ease;
+            background: var(--bg-secondary);
+            font-family: var(--font-family-mono);
         }
 
-        input:focus {
+        .login-container input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--primary);
+            background: var(--bg-primary);
         }
 
-        button {
+        .login-container button {
             width: 100%;
             padding: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            font-weight: 600;
+            background: var(--primary);
+            color: var(--text-inverse);
+            border: 1px solid var(--primary);
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-bold);
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 100ms ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        button:hover {
-            transform: translateY(-2px);
+        .login-container button:hover {
+            background: var(--primary-light);
+            border-color: var(--primary-light);
         }
 
         .error {
-            background: #fee;
-            border: 1px solid #fcc;
-            color: #c33;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 20px;
+            background: var(--error-light);
+            border: 2px solid var(--error);
+            color: var(--error);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-lg);
             display: none;
+            font-family: var(--font-family-mono);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-semibold);
         }
 
         .info {
-            background: #e3f2fd;
-            border: 1px solid #90caf9;
-            color: #1976d2;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 20px;
-            font-size: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius);
+            margin-top: var(--spacing-xl);
+            font-size: var(--font-size-xs);
+            font-family: var(--font-family-mono);
         }
 
         .info strong {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: var(--spacing-sm);
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <h1>🎓 Журнал университета</h1>
+        <div class="system-label">GGCell v1.0 // Auth</div>
+        <h1>Вход</h1>
 
         <div class="error" id="error"></div>
 
         <form id="loginForm">
             <div class="form-group">
-                <label for="username">Логин</label>
-                <input type="text" id="username" name="username" required>
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required autocomplete="username">
             </div>
 
             <div class="form-group">
-                <label for="password">Пароль</label>
-                <input type="password" id="password" name="password" required>
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
             </div>
 
             <button type="submit">Войти</button>
         </form>
 
         <div class="info">
-            <strong>Тестовые аккаунты:</strong>
-            Администратор: admin / admin123<br>
-            Преподаватель: ivanov / teacher123
+            <strong>Test Accounts:</strong>
+            admin / admin123<br>
+            ivanov / teacher123
         </div>
     </div>
 

@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# База данных (будет монтироваться через volume)
+university.db
+*.db-journal
+
+# Логи
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Временные файлы
+*.tmp
+*.bak
+

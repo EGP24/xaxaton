@@ -1,4 +1,3 @@
-"""Скрипт для создания и наполнения базы данных с новой системой расписаний"""
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database import Base
@@ -8,11 +7,9 @@ from passlib.context import CryptContext
 from datetime import date, timedelta
 import random
 
-# Создаем движок базы данных
 SQLALCHEMY_DATABASE_URL = "sqlite:///./university.db"
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 
-# Создаем все таблицы
 Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
 
@@ -25,7 +22,6 @@ print("🗑️  Старая база данных удалена")
 print("✅ Таблицы созданы с новой структурой")
 print("📝 Начинаем наполнение тестовыми данными...\n")
 
-# 1. Создаем пользователей
 admin = User(
     username="admin",
     hashed_password=pwd_context.hash("admin123"),
@@ -58,7 +54,6 @@ db.add_all([admin, teacher1, teacher2, teacher3])
 db.commit()
 print("👥 Созданы пользователи (admin, ivanov, petrova, sidorov)\n")
 
-# 2. Создаем группы
 groups_data = ["ИВТ-301", "ИВТ-302", "ИВТ-401", "ПИ-301"]
 groups = []
 for group_name in groups_data:
@@ -68,7 +63,6 @@ for group_name in groups_data:
 db.commit()
 print(f"📚 Созданы группы: {', '.join(groups_data)}\n")
 
-# 3. Создаем студентов
 students_data = [
     ("Алексеев Алексей Алексеевич", "ИВТ-301"),
     ("Борисова Анна Владимировна", "ИВТ-301"),
@@ -99,7 +93,6 @@ for student_name, group_name in students_data:
 db.commit()
 print(f"🎓 Создано {len(students)} студентов\n")
 
-# 4. Создаем дисциплины
 disciplines_data = [
     "Математический анализ",
     "Программирование",
@@ -116,7 +109,6 @@ for discipline_name in disciplines_data:
 db.commit()
 print(f"📖 Созданы дисциплины: {', '.join(disciplines_data)}\n")
 
-# 5. Связываем преподавателей с дисциплинами
 teacher_disciplines_data = [
     (teacher1.id, disciplines[0].id),
     (teacher1.id, disciplines[3].id),
@@ -132,14 +124,12 @@ for teacher_id, discipline_id in teacher_disciplines_data:
 db.commit()
 print("👨‍🏫 Преподаватели назначены на дисциплины\n")
 
-# 6. Создаем семестр
 today = date.today()
-# Определяем начало семестра (например, начало сентября или февраля)
-if today.month >= 9:  # Осенний семестр
+if today.month >= 9:
     semester_start = date(today.year, 9, 1)
     semester_end = date(today.year, 12, 31)
     semester_name = f"Осень {today.year}"
-else:  # Весенний семестр
+else:
     semester_start = date(today.year, 2, 1)
     semester_end = date(today.year, 6, 30)
     semester_name = f"Весна {today.year}"
@@ -154,10 +144,8 @@ db.add(semester)
 db.commit()
 print(f"📆 Создан семестр: {semester_name} ({semester_start} - {semester_end})\n")
 
-# 7. Создаем шаблоны расписания
 templates = []
 
-# Программирование для ИВТ-301 (понедельник, лекция, обе недели)
 template1 = ScheduleTemplate(
     semester_id=semester.id,
     discipline_id=disciplines[1].id,
@@ -174,7 +162,6 @@ template1.groups.append(groups[0])
 templates.append(template1)
 db.add(template1)
 
-# Программирование для ИВТ-301 (среда, лабораторная, только нечетные недели)
 template2 = ScheduleTemplate(
     semester_id=semester.id,
     discipline_id=disciplines[1].id,
@@ -191,7 +178,6 @@ template2.groups.append(groups[0])
 templates.append(template2)
 db.add(template2)
 
-# Программирование для ИВТ-301 (пятница, семинар, только четные недели)
 template3 = ScheduleTemplate(
     semester_id=semester.id,
     discipline_id=disciplines[1].id,
@@ -208,7 +194,6 @@ template3.groups.append(groups[0])
 templates.append(template3)
 db.add(template3)
 
-# Базы данных для ИВТ-301 (вторник, лекция, обе недели)
 template4 = ScheduleTemplate(
     semester_id=semester.id,
     discipline_id=disciplines[2].id,
@@ -225,7 +210,6 @@ template4.groups.append(groups[0])
 templates.append(template4)
 db.add(template4)
 
-# Базы данных для ИВТ-301 (четверг, лабораторная, обе недели)
 template5 = ScheduleTemplate(
     semester_id=semester.id,
     discipline_id=disciplines[2].id,
@@ -242,12 +226,11 @@ template5.groups.append(groups[0])
 templates.append(template5)
 db.add(template5)
 
-# Программирование для ИВТ-301 (среда, другой преподаватель для теста прав)
 template6 = ScheduleTemplate(
     semester_id=semester.id,
     discipline_id=disciplines[1].id,
     classroom="А-305",
-    teacher_id=teacher1.id,  # Другой преподаватель!
+    teacher_id=teacher1.id,
     lesson_type=LessonType.LECTURE,
     day_of_week=DayOfWeek.WEDNESDAY.value,
     time_start="15:00",
@@ -259,8 +242,6 @@ template6.groups.append(groups[0])
 templates.append(template6)
 db.add(template6)
 
-# ДЕМОНСТРАЦИЯ: Несколько пар в одно время (вторник 09:00 - подгруппы)
-# Подгруппа 1 - Программирование (лабораторная)
 template7 = ScheduleTemplate(
     semester_id=semester.id,
     discipline_id=disciplines[1].id,
@@ -277,7 +258,6 @@ template7.groups.append(groups[0])
 templates.append(template7)
 db.add(template7)
 
-# Подгруппа 2 - Веб-разработка (лабораторная) в то же время
 template8 = ScheduleTemplate(
     semester_id=semester.id,
     discipline_id=disciplines[4].id,
@@ -294,8 +274,6 @@ template8.groups.append(groups[0])
 templates.append(template8)
 db.add(template8)
 
-# ДЕМОНСТРАЦИЯ: Три пары в одно время (пятница 13:00)
-# Математика - подгруппа 1
 template9 = ScheduleTemplate(
     semester_id=semester.id,
     discipline_id=disciplines[0].id,
@@ -312,7 +290,6 @@ template9.groups.append(groups[0])
 templates.append(template9)
 db.add(template9)
 
-# Алгоритмы - подгруппа 2
 template10 = ScheduleTemplate(
     semester_id=semester.id,
     discipline_id=disciplines[3].id,
@@ -329,7 +306,6 @@ template10.groups.append(groups[0])
 templates.append(template10)
 db.add(template10)
 
-# Операционные системы - подгруппа 3
 template11 = ScheduleTemplate(
     semester_id=semester.id,
     discipline_id=disciplines[5].id,
@@ -346,9 +322,6 @@ template11.groups.append(groups[0])
 templates.append(template11)
 db.add(template11)
 
-# ДЕМОНСТРАЦИЯ: Две пары ПРОГРАММИРОВАНИЯ в один день (понедельник)
-# Первая пара - лекция в 09:00 (уже есть как template1)
-# Вторая пара - практика в 12:00
 template12 = ScheduleTemplate(
     semester_id=semester.id,
     discipline_id=disciplines[1].id,
@@ -365,8 +338,6 @@ template12.groups.append(groups[0])
 templates.append(template12)
 db.add(template12)
 
-# ДЕМОНСТРАЦИЯ: Еще одна пара БАЗ ДАННЫХ в четверг
-# Уже есть одна в 15:00, добавим в 09:00
 template13 = ScheduleTemplate(
     semester_id=semester.id,
     discipline_id=disciplines[2].id,
@@ -386,34 +357,29 @@ db.add(template13)
 db.commit()
 print(f"📋 Создано {len(templates)} шаблонов расписания\n")
 
-# 8. Генерируем экземпляры занятий на основе шаблонов
 print("🔄 Генерация конкретных занятий из шаблонов...")
 
 def get_week_number(d, start):
-    """Определяет номер недели с начала семестра (0-based)"""
     days_diff = (d - start).days
     return days_diff // 7
 
 def is_week_type_match(week_num, week_type):
-    """Проверяет, подходит ли неделя под тип (четная/нечетная)"""
     if week_type == WeekType.BOTH:
         return True
     elif week_type == WeekType.EVEN:
         return week_num % 2 == 0
-    else:  # ODD
+    else:
         return week_num % 2 == 1
 
 instances_count = 0
 current_date = semester_start
 
-# Генерируем занятия только до сегодняшнего дня (и несколько дней вперед для демонстрации)
 end_generation_date = min(today + timedelta(days=14), semester_end)
 
 while current_date <= end_generation_date:
     week_num = get_week_number(current_date, semester_start)
     day_of_week = current_date.weekday()
 
-    # Ищем подходящие шаблоны для этого дня
     for template in templates:
         if template.day_of_week == day_of_week and is_week_type_match(week_num, template.week_type):
             instance = ScheduleInstance(
@@ -430,7 +396,6 @@ while current_date <= end_generation_date:
 db.commit()
 print(f"✅ Сгенерировано {instances_count} конкретных занятий\n")
 
-# 9. Создаем записи о посещаемости и оценках только для прошедших занятий
 print("📊 Создание записей о посещаемости для прошедших занятий...")
 
 past_instances = db.query(ScheduleInstance).filter(
@@ -439,25 +404,21 @@ past_instances = db.query(ScheduleInstance).filter(
 
 records_count = 0
 for instance in past_instances:
-    # Получаем шаблон для определения групп
     template = instance.template
 
-    # Для каждой группы в шаблоне
     for group in template.groups:
-        # Для каждого студента в группе
         group_students = db.query(Student).filter(Student.group_id == group.id).all()
 
         for student in group_students:
-            # Случайный статус и оценка
             rand = random.random()
 
-            if rand < 0.7:  # 70% - присутствовал с оценкой
+            if rand < 0.7:
                 status_choice = StudentStatus.PRESENT
-                grade = random.choice([3.0, 3.5, 4.0, 4.5, 5.0])
-            elif rand < 0.85:  # 15% - отсутствовал
+                grade = random.choice([2, 3, 4, 5])
+            elif rand < 0.85:
                 status_choice = StudentStatus.ABSENT
                 grade = None
-            else:  # 15% - уважительная причина
+            else:
                 status_choice = StudentStatus.EXCUSED
                 grade = None
 

@@ -16,16 +16,17 @@ class LessonType(str, enum.Enum):
 
 
 class StudentStatus(str, enum.Enum):
-    PRESENT = "present"  # Присутствовал (не отображается, используется внутренне)
-    ABSENT = "absent"    # Отсутствовал
-    EXCUSED = "excused"  # Уважительная причина
-    AUTO_DETECTED = "auto_detected"  # Автоматически распознан на фото
+    PRESENT = "present"
+    ABSENT = "absent"
+    EXCUSED = "excused"
+    AUTO_DETECTED = "auto_detected"
+    FINGERPRINT_DETECTED = "fingerprint_detected"
 
 
 class WeekType(str, enum.Enum):
-    EVEN = "even"  # Четная неделя
-    ODD = "odd"    # Нечетная неделя
-    BOTH = "both"  # Обе недели
+    EVEN = "even"
+    ODD = "odd"
+    BOTH = "both"
 
 
 class DayOfWeek(int, enum.Enum):
@@ -37,7 +38,6 @@ class DayOfWeek(int, enum.Enum):
     SATURDAY = 5
 
 
-# Таблица для связи многие-ко-многим между шаблонами расписания и группами
 template_groups = Table(
     'template_groups',
     Base.metadata,
@@ -63,7 +63,8 @@ class Student(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     full_name = Column(String, index=True)
-    face_encoding = Column(String, nullable=True)  # JSON-строка с эмбеддингом лица
+    face_encoding = Column(String, nullable=True)
+    fingerprint_template = Column(String, nullable=True)
     group_id = Column(Integer, ForeignKey("groups.id"))
 
     group = relationship("Group", back_populates="students")
@@ -91,39 +92,35 @@ class Discipline(Base):
 
 
 class Semester(Base):
-    """Семестр - период обучения"""
     __tablename__ = "semesters"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)  # Например: "Осень 2024"
+    name = Column(String, index=True)
     start_date = Column(Date)
     end_date = Column(Date)
-    is_active = Column(Boolean, default=False)  # Активный семестр
+    is_active = Column(Boolean, default=False)
 
     schedule_templates = relationship("ScheduleTemplate", back_populates="semester")
     schedule_instances = relationship("ScheduleInstance", back_populates="semester")
 
 
 class ScheduleTemplate(Base):
-    """Шаблон расписания - повторяющееся занятие в рамках семестра"""
     __tablename__ = "schedule_templates"
 
     id = Column(Integer, primary_key=True, index=True)
     semester_id = Column(Integer, ForeignKey("semesters.id"))
     discipline_id = Column(Integer, ForeignKey("disciplines.id"))
-    classroom = Column(String)  # Номер аудитории
+    classroom = Column(String)
     teacher_id = Column(Integer, ForeignKey("users.id"))
     lesson_type = Column(SQLEnum(LessonType))
 
-    # Расписание по дням недели
-    day_of_week = Column(Integer)  # 0-5 (пн-сб)
-    time_start = Column(String)  # Формат "HH:MM"
+    day_of_week = Column(Integer)
+    time_start = Column(String)
     time_end = Column(String)
 
-    # Тип недели
     week_type = Column(SQLEnum(WeekType), default=WeekType.BOTH)
 
-    is_stream = Column(Boolean, default=False)  # Потоковая пара или нет
+    is_stream = Column(Boolean, default=False)
 
     semester = relationship("Semester", back_populates="schedule_templates")
     discipline = relationship("Discipline", back_populates="schedule_templates")
@@ -133,7 +130,6 @@ class ScheduleTemplate(Base):
 
 
 class ScheduleInstance(Base):
-    """Конкретное занятие - экземпляр шаблона на определенную дату"""
     __tablename__ = "schedule_instances"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -141,10 +137,9 @@ class ScheduleInstance(Base):
     semester_id = Column(Integer, ForeignKey("semesters.id"))
     date = Column(Date, index=True)
 
-    # Можно переопределить данные из шаблона при необходимости
-    classroom = Column(String, nullable=True)  # Если None - берется из шаблона
-    teacher_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # Если None - берется из шаблона
-    is_cancelled = Column(Boolean, default=False)  # Отмененное занятие
+    classroom = Column(String, nullable=True)
+    teacher_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    is_cancelled = Column(Boolean, default=False)
 
     template = relationship("ScheduleTemplate", back_populates="instances")
     semester = relationship("Semester", back_populates="schedule_instances")
@@ -153,7 +148,6 @@ class ScheduleInstance(Base):
 
 
 class TeacherDiscipline(Base):
-    """Связь преподавателей с дисциплинами"""
     __tablename__ = "teacher_disciplines"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -165,14 +159,13 @@ class TeacherDiscipline(Base):
 
 
 class StudentRecord(Base):
-    """Объединенная таблица для посещаемости и оценок"""
     __tablename__ = "student_records"
 
     id = Column(Integer, primary_key=True, index=True)
     student_id = Column(Integer, ForeignKey("students.id"))
     schedule_instance_id = Column(Integer, ForeignKey("schedule_instances.id"))
     status = Column(SQLEnum(StudentStatus), default=StudentStatus.PRESENT)
-    grade = Column(Float, nullable=True)  # Оценка может быть пустой
+    grade = Column(Float, nullable=True)
 
     student = relationship("Student", back_populates="records")
     schedule_instance = relationship("ScheduleInstance", back_populates="records")

@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Аналитика</title>
+    <link rel="stylesheet" href="/static/global.css">
+    <style>
+        body {
+            background: var(--bg-primary);
+            padding: 0;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--spacing-lg);
+        }
+
+        /* Header (строгий стиль) */
+        .header {
+            background: var(--bg-secondary);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-lg);
+            border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: var(--font-size-xl);
+            color: var(--text-primary);
+            font-family: var(--font-family-mono);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: var(--font-weight-bold);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            transition: border-color 100ms ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--primary);
+        }
+
+        .stat-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .stat-card-title {
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: var(--font-weight-bold);
+            font-family: var(--font-family-mono);
+        }
+
+        .stat-card-value {
+            font-size: 48px;
+            font-weight: var(--font-weight-bold);
+            color: var(--primary);
+            line-height: 1;
+            margin-bottom: var(--spacing-sm);
+            font-family: var(--font-family-mono);
+        }
+
+        .stat-card-subtitle {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+
+        .stat-card-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-semibold);
+            margin-top: var(--spacing-sm);
+        }
+
+        .badge-success {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .badge-warning {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+
+        .badge-info {
+            background: var(--info-light);
+            color: var(--info);
+        }
+
+        /* Progress Bar (строгий стиль) */
+        .progress-bar {
+            height: 6px;
+            background: var(--gray-200);
+            border-radius: 0;
+            overflow: hidden;
+            margin-top: var(--spacing-sm);
+            border: 1px solid var(--border-color);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            transition: width 1s ease;
+        }
+
+        /* Groups Section (строгий стиль) */
+        .groups-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .groups-card {
+            background: var(--bg-secondary);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+        }
+
+        .groups-card h3 {
+            margin: 0 0 var(--spacing-md) 0;
+            font-size: var(--font-size-lg);
+            color: var(--text-primary);
+        }
+
+        .group-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-sm);
+            transition: background var(--transition-base);
+        }
+
+        .group-item:hover {
+            background: var(--gray-100);
+        }
+
+        .group-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .group-name {
+            font-weight: var(--font-weight-semibold);
+            color: var(--text-primary);
+        }
+
+        .group-rate {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .rate-value {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
+        }
+
+        .rate-good {
+            color: var(--success);
+        }
+
+        .rate-medium {
+            color: var(--warning);
+        }
+
+        .rate-bad {
+            color: var(--error);
+        }
+
+        /* Attendance Chart (строгий стиль) */
+        .chart-container {
+            background: var(--bg-secondary);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .chart-container h3 {
+            margin: 0 0 var(--spacing-lg) 0;
+            font-size: var(--font-size-md);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: var(--font-weight-bold);
+        }
+
+        .attendance-visual {
+            display: flex;
+            gap: var(--spacing-md);
+            align-items: flex-end;
+            height: 200px;
+            margin-top: var(--spacing-lg);
+        }
+
+        .bar {
+            flex: 1;
+            background: var(--primary);
+            border-radius: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            padding: var(--spacing-sm);
+            color: white;
+            font-weight: var(--font-weight-bold);
+            transition: opacity 100ms ease;
+            border: 1px solid var(--primary);
+        }
+
+        .bar:hover {
+            opacity: 0.8;
+        }
+
+        .bar-value {
+            font-size: var(--font-size-lg);
+        }
+
+        .bar-label {
+            margin-top: var(--spacing-sm);
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: var(--spacing-2xl);
+            color: var(--text-secondary);
+        }
+
+        .spinner-large {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--gray-200);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto var(--spacing-md);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .groups-container {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: var(--spacing-md);
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: stretch;
+            }
+
+            .header-actions .btn {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Панель управления</h1>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="window.location.href='/schedule'">Расписание</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/journal'">Журнал</button>
+                <button class="btn btn-secondary" id="adminBtn" onclick="window.location.href='/admin'" style="display:none;">Админ</button>
+                <button class="btn btn-danger btn-sm" onclick="logout()">Выход</button>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner-large"></div>
+            <p>Загрузка статистики...</p>
+        </div>
+
+        <div id="content" style="display: none;">
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Всего студентов</span>
+                    </div>
+                    <div class="stat-card-value" id="totalStudents">0</div>
+                    <div class="stat-card-subtitle">в системе</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Посещаемость (30д)</span>
+                    </div>
+                    <div class="stat-card-value" id="attendanceRate">0%</div>
+                    <div class="stat-card-subtitle" id="totalRecords">0 записей</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="attendanceProgress" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Распознавание лиц</span>
+                    </div>
+                    <div class="stat-card-value" id="faceCoverage">0%</div>
+                    <div class="stat-card-subtitle" id="studentsWithFace">0 из 0 студентов</div>
+                    <span class="stat-card-badge badge-info" id="autoDetectionRate">0% автоотметок</span>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Активный семестр</span>
+                    </div>
+                    <div class="stat-card-value" id="semesterName" style="font-size: 20px; font-family: var(--font-family);">-</div>
+                    <div class="stat-card-subtitle" id="semesterDates">-</div>
+                </div>
+            </div>
+
+            <!-- Groups Comparison -->
+            <div class="groups-container">
+                <div class="groups-card">
+                    <h3>Лучшие группы по посещаемости</h3>
+                    <div id="topGroups">Нет данных</div>
+                </div>
+
+                <div class="groups-card">
+                    <h3>Требуют внимания</h3>
+                    <div id="bottomGroups">Нет данных</div>
+                </div>
+            </div>
+
+            <!-- Summary Stats -->
+            <div class="chart-container">
+                <h3>Сводная статистика</h3>
+                <div class="stats-grid">
+                    <div>
+                        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-sm);">Групп</p>
+                        <p style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold);" id="totalGroups">0</p>
+                    </div>
+                    <div>
+                        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-sm);">Дисциплин</p>
+                        <p style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold);" id="totalDisciplines">0</p>
+                    </div>
+                    <div>
+                        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-sm);">Занятий за 30 дней</p>
+                        <p style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold);" id="totalLessons">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/toast.js"></script>
+    <script>
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+            window.location.href = '/login';
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/api/dashboard/stats', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.status === 401) {
+                    logout();
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error('Failed to load dashboard');
+                }
+
+                const data = await response.json();
+                renderDashboard(data);
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                toast.error('Не удалось загрузить статистику', 'Ошибка');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+            }
+        }
+
+        function renderDashboard(data) {
+            const { overview, attendance_30d, top_groups, bottom_groups, active_semester } = data;
+
+            // Overview stats
+            document.getElementById('totalStudents').textContent = overview.total_students;
+            document.getElementById('totalGroups').textContent = overview.total_groups;
+            document.getElementById('totalDisciplines').textContent = overview.total_disciplines;
+
+            // Attendance
+            document.getElementById('attendanceRate').textContent = `${attendance_30d.attendance_rate}%`;
+            document.getElementById('totalRecords').textContent = `${attendance_30d.total_records} записей`;
+            document.getElementById('attendanceProgress').style.width = `${attendance_30d.attendance_rate}%`;
+
+            // Face recognition
+            document.getElementById('faceCoverage').textContent = `${overview.face_coverage_percentage}%`;
+            document.getElementById('studentsWithFace').textContent =
+                `${overview.students_with_face} из ${overview.total_students} студентов`;
+            document.getElementById('autoDetectionRate').textContent =
+                `${attendance_30d.auto_detection_rate}% автоотметок`;
+
+            // Total lessons
+            document.getElementById('totalLessons').textContent = attendance_30d.total_lessons;
+
+            // Semester
+            if (active_semester) {
+                document.getElementById('semesterName').textContent = active_semester.name;
+                document.getElementById('semesterDates').textContent =
+                    `${active_semester.start_date} — ${active_semester.end_date}`;
+            }
+
+            // Top groups
+            if (top_groups && top_groups.length > 0) {
+                document.getElementById('topGroups').innerHTML = top_groups.map((group, index) => `
+                    <div class="group-item">
+                        <div class="group-name">${index + 1}. ${group.name}</div>
+                        <div class="group-rate">
+                            <span class="rate-value rate-good">${group.attendance_rate}%</span>
+                            <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">
+                                (${group.total_records})
+                            </span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Bottom groups
+            if (bottom_groups && bottom_groups.length > 0) {
+                document.getElementById('bottomGroups').innerHTML = bottom_groups.map((group, index) => {
+                    const rateClass = group.attendance_rate >= 70 ? 'rate-medium' : 'rate-bad';
+                    return `
+                        <div class="group-item">
+                            <div class="group-name">${index + 1}. ${group.name}</div>
+                            <div class="group-rate">
+                                <span class="rate-value ${rateClass}">${group.attendance_rate}%</span>
+                                <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">
+                                    (${group.total_records})
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Check user role and show admin button
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const user = await response.json();
+                    if (user.role === 'admin') {
+                        document.getElementById('adminBtn').style.display = 'inline-flex';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+            }
+        }
+
+        // Load on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUserInfo();
+            loadDashboard();
+        });
+    </script>
+</body>
+</html>

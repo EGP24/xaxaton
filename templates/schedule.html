@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Моё расписание</title>
+    <link rel="stylesheet" href="/static/global.css">
+    <style>
+        body {
+            margin: 0;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        .layout {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: var(--spacing-lg);
+        }
+        header {
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            margin-bottom: var(--spacing-lg);
+        }
+        header h1 {
+            margin: 0;
+            font-size: var(--font-size-xl);
+            font-family: var(--font-family-mono);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: var(--font-weight-bold);
+        }
+        .user-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: center;
+        }
+        .btn {
+            border: 1px solid var(--border-color-dark);
+            border-radius: var(--border-radius);
+            padding: 8px 16px;
+            cursor: pointer;
+            font-weight: var(--font-weight-semibold);
+            font-size: var(--font-size-base);
+            transition: all 100ms ease;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: var(--text-inverse);
+            border-color: var(--primary);
+        }
+        .btn-primary:hover {
+            background: var(--primary-light);
+            border-color: var(--primary-light);
+        }
+        .btn-muted {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-color: var(--border-color-dark);
+        }
+        .btn-muted:hover {
+            background: var(--gray-200);
+        }
+        .filters-card {
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            border: 1px solid var(--border-color);
+            margin-bottom: var(--spacing-lg);
+        }
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: var(--spacing-md);
+        }
+        label {
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-xs);
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: var(--font-weight-semibold);
+        }
+        input {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color-dark);
+            font-size: var(--font-size-base);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 100ms ease;
+        }
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--bg-secondary);
+        }
+        .schedule-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+        .day-card {
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-md);
+            border: 1px solid var(--border-color);
+        }
+        .day-card h3 {
+            margin: 0 0 var(--spacing-md) 0;
+            font-size: var(--font-size-lg);
+            color: var(--text-primary);
+            font-family: var(--font-family-mono);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: var(--font-weight-bold);
+        }
+        .lesson-item {
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-sm);
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+            background: var(--bg-tertiary);
+            transition: all 100ms ease;
+        }
+        .lesson-item:hover {
+            background: var(--gray-200);
+        }
+        .lesson-item:last-child {
+            margin-bottom: 0;
+        }
+        .lesson-meta {
+            display: flex;
+            gap: var(--spacing-lg);
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            font-family: var(--font-family-mono);
+        }
+        .badge {
+            background: var(--info-light);
+            color: var(--info);
+            padding: 4px 10px;
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-semibold);
+            border: 1px solid var(--info);
+        }
+        .lesson-actions {
+            margin-top: var(--spacing-xs);
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+        .empty-state {
+            text-align: center;
+            padding: var(--spacing-2xl);
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+        }
+        @media (max-width: 640px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--spacing-md);
+            }
+            .lesson-meta {
+                flex-direction: column;
+            }
+            .lesson-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <header>
+            <div>
+                <h1>Расписание</h1>
+                <small id="userInfo" style="color:#5c677d;">Loading user...</small>
+            </div>
+            <div class="user-actions">
+                <button class="btn btn-muted" onclick="window.location.href='/dashboard'">Панель</button>
+                <button class="btn btn-muted" onclick="window.location.href='/journal'">Журнал</button>
+                <button class="btn btn-muted" onclick="window.location.href='/admin'" id="adminBtn" style="display:none;">Админ</button>
+                <button class="btn btn-primary" onclick="logout()">Выход</button>
+            </div>
+        </header>
+
+        <section class="filters-card">
+            <div class="filters-grid">
+                <div>
+                    <label for="dateFrom">С</label>
+                    <input type="date" id="dateFrom">
+                </div>
+                <div>
+                    <label for="dateTo">По</label>
+                    <input type="date" id="dateTo">
+                </div>
+            </div>
+            <div style="margin-top: 16px; display: flex; gap: 10px;">
+                <button class="btn btn-primary" onclick="loadSchedule()">Показать</button>
+                <button class="btn btn-muted" onclick="setDefaultDates()">Сбросить</button>
+            </div>
+        </section>
+
+        <section id="scheduleContainer" class="schedule-list"></section>
+    </div>
+
+    <script src="/static/toast.js"></script>
+    <script src="/static/index.js?v=2"></script>
+</body>
+</html>
+

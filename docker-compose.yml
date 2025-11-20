@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: ggcell_server
+    ports:
+      - "8888:8888"
+    volumes:
+      # Монтируем код для hot-reload в режиме разработки
+      - .:/app
+      # Сохраняем базу данных на хосте
+      - ./data:/app/data
+      # Сохраняем модели распознавания лиц
+      - ./dlib_face_recognition_resnet_model_v1.dat:/app/dlib_face_recognition_resnet_model_v1.dat
+      - ./shape_predictor_68_face_landmarks.dat:/app/shape_predictor_68_face_landmarks.dat
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=sqlite:///./university.db
+    restart: unless-stopped
+    networks:
+      - ggcell_network
+
+networks:
+  ggcell_network:
+    driver: bridge
+

@@ -1,19 +1,37 @@
-// Основные переменные
+
 let token = localStorage.getItem('token');
 let currentWeekFilter = 'odd';
+let studentsPage = 1;
+let studentsTotalPages = 1;
+const STUDENTS_PAGE_SIZE = 10;
+let studentsSearchValue = '';
+let studentsGroupFilterValue = '';
 
-// Проверка авторизации
+let schedulePage = 1;
+let scheduleTotalPages = 1;
+const SCHEDULE_PAGE_SIZE = 18;
+let scheduleFilters = {
+    discipline_id: '',
+    teacher_id: '',
+    group_id: ''
+};
+
+let groupsCache = [];
+let disciplinesCache = [];
+let teachersCache = [];
+
+
 if (!token) {
     window.location.href = '/login';
 }
 
-// Функция выхода
+
 function logout() {
     localStorage.removeItem('token');
     window.location.href = '/login';
 }
 
-// API запросы
+
 async function apiRequest(url, options = {}) {
     try {
         const response = await fetch(url, {
@@ -41,7 +59,60 @@ async function apiRequest(url, options = {}) {
     }
 }
 
-// Переключение вкладок
+function populateSelect(selectId, items = [], options = {}) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    const {
+        placeholder = 'Все',
+        valueKey = 'id',
+        labelKey = 'name',
+        keepEmptyOption = true,
+        selectedValue
+    } = options;
+
+    const previousValue = select.value;
+    let html = '';
+    if (keepEmptyOption) {
+        html += `<option value="">${placeholder}</option>`;
+    }
+    html += (items || []).map(item => {
+        return `<option value="${item[valueKey]}">${item[labelKey]}</option>`;
+    }).join('');
+    select.innerHTML = html;
+
+    const targetValue = selectedValue !== undefined ? selectedValue : previousValue;
+    if (targetValue !== undefined && targetValue !== null) {
+        select.value = targetValue;
+    }
+}
+
+async function bootstrapFilters() {
+    try {
+        const [groups, disciplines, teachers] = await Promise.all([
+            apiRequest('/api/groups'),
+            apiRequest('/api/disciplines'),
+            apiRequest('/api/admin/teachers')
+        ]);
+
+        groupsCache = groups || [];
+        disciplinesCache = disciplines || [];
+        teachersCache = teachers || [];
+
+        populateSelect('studentGroupFilter', groupsCache, { placeholder: 'Все группы' });
+        populateSelect('scheduleFilterGroup', groupsCache, { placeholder: 'Все группы' });
+        populateSelect('reportGroupSelect', groupsCache, { placeholder: 'Выберите группу' });
+
+        populateSelect('scheduleFilterDiscipline', disciplinesCache, { placeholder: 'Все дисциплины' });
+        populateSelect('reportDisciplineSelect', disciplinesCache, { placeholder: 'Все дисциплины' });
+
+        populateSelect('scheduleFilterTeacher', teachersCache, { placeholder: 'Все преподаватели', labelKey: 'full_name' });
+    } catch (error) {
+        console.error('Ошибка загрузки фильтров:', error);
+    }
+}
+
+
 function switchTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -56,7 +127,7 @@ function switchTab(tabName) {
     if (tabName === 'schedule') loadScheduleTemplates();
 }
 
-// Загрузка информации о пользователе
+
 async function loadUserInfo() {
     try {
         const user = await apiRequest('/api/me');
@@ -68,19 +139,40 @@ async function loadUserInfo() {
     }
 }
 
-// ============ СТУДЕНТЫ ============
 
-async function loadStudents() {
+
+async function loadStudents(options = {}) {
+    const { resetPage = false } = options;
+    if (resetPage) {
+        studentsPage = 1;
+    }
+
     try {
-        const students = await apiRequest('/api/students');
-        const container = document.getElementById('studentsList');
+        const params = new URLSearchParams({
+            page: studentsPage,
+            page_size: STUDENTS_PAGE_SIZE
+        });
+        if (studentsSearchValue) params.append('search', studentsSearchValue);
+        if (studentsGroupFilterValue) params.append('group_id', studentsGroupFilterValue);
 
-        if (!students || students.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Студентов пока нет</p>';
+        const response = await apiRequest(`/api/students?${params.toString()}`);
+        if (!response) return;
+
+        const meta = response.meta || { page: 1, pages: 1, total: 0 };
+        if (meta.pages && studentsPage > meta.pages && meta.total > 0) {
+            studentsPage = meta.pages;
+            return loadStudents();
+        }
+
+        const container = document.getElementById('studentsList');
+        const students = response.items || [];
+
+        if (students.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Студенты не найдены</p>';
+            updateStudentsPagination(meta);
             return;
         }
 
-        // Проверяем наличие фото для каждого студента
         const studentsWithFaceStatus = await Promise.all(
             students.map(async (s) => {
                 try {
@@ -96,8 +188,9 @@ async function loadStudents() {
             <div class="list-item">
                 <div>
                     <strong>${s.full_name}</strong>
-                    <span class="badge badge-blue">${s.group_name}</span>
-                    ${s.hasFace ? '<span class="badge badge-success" title="Фото загружено">Фото</span>' : '<span class="badge badge-warning" title="Фото не загружено">Нет фото</span>'}
+                    <span class="badge badge-blue">${s.group_name || '—'}</span>
+                    ${s.hasFace ? '<span class="badge badge-success" title="Фото загружено">[FACE] Фото</span>' : '<span class="badge badge-warning" title="Фото не загружено">Нет фото</span>'}
+                    ${s.has_fingerprint ? '<span class="badge badge-success" title="Отпечаток загружен">Отпечаток</span>' : '<span class="badge badge-warning" title="Отпечаток не загружен">Нет отпечатка</span>'}
                 </div>
                 <div style="display: flex; gap: 10px;">
                     <button class="btn btn-primary" onclick="openUploadFaceModal(${s.id}, '${s.full_name.replace(/'/g, "\\'")}')">
@@ -107,6 +200,8 @@ async function loadStudents() {
                 </div>
             </div>
         `).join('');
+
+        updateStudentsPagination(meta);
     } catch (error) {
         console.error('Ошибка загрузки студентов:', error);
     }
@@ -150,7 +245,7 @@ document.getElementById('studentForm').addEventListener('submit', async (e) => {
         document.getElementById('studentForm').reset();
         setTimeout(() => {
             closeModal('studentModal');
-            loadStudents();
+            loadStudents({ resetPage: true });
         }, 1500);
     } catch (error) {
         alertDiv.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}</div>`;
@@ -167,11 +262,57 @@ async function deleteStudent(id) {
         });
         loadStudents();
     } catch (error) {
-        alert('Ошибка удаления студента');
+        console.log('Ошибка удаления студента');
     }
 }
 
-// ============ ГРУППЫ ============
+function applyStudentFilters() {
+    const searchInput = document.getElementById('studentSearchInput');
+    const groupSelect = document.getElementById('studentGroupFilter');
+    studentsSearchValue = searchInput ? searchInput.value.trim() : '';
+    studentsGroupFilterValue = groupSelect ? groupSelect.value : '';
+    loadStudents({ resetPage: true });
+}
+
+function resetStudentFilters() {
+    const searchInput = document.getElementById('studentSearchInput');
+    const groupSelect = document.getElementById('studentGroupFilter');
+    if (searchInput) searchInput.value = '';
+    if (groupSelect) groupSelect.value = '';
+    studentsSearchValue = '';
+    studentsGroupFilterValue = '';
+    loadStudents({ resetPage: true });
+}
+
+function changeStudentsPage(direction) {
+    const nextPage = studentsPage + direction;
+    if (nextPage < 1 || nextPage > studentsTotalPages) {
+        return;
+    }
+    studentsPage = nextPage;
+    loadStudents();
+}
+
+function updateStudentsPagination(meta = { page: 1, pages: 1 }) {
+    studentsPage = meta.page || 1;
+    studentsTotalPages = meta.pages || 1;
+
+    const info = document.getElementById('studentsPageInfo');
+    const prevBtn = document.getElementById('studentsPrevBtn');
+    const nextBtn = document.getElementById('studentsNextBtn');
+
+    if (info) {
+        info.textContent = `Стр. ${studentsPage} из ${studentsTotalPages}`;
+    }
+    if (prevBtn) {
+        prevBtn.disabled = studentsPage <= 1;
+    }
+    if (nextBtn) {
+        nextBtn.disabled = studentsPage >= studentsTotalPages;
+    }
+}
+
+
 
 async function loadGroups() {
     try {
@@ -220,6 +361,7 @@ document.getElementById('groupForm').addEventListener('submit', async (e) => {
         setTimeout(() => {
             closeModal('groupModal');
             loadGroups();
+            bootstrapFilters();
         }, 1500);
     } catch (error) {
         alertDiv.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}</div>`;
@@ -235,12 +377,13 @@ async function deleteGroup(id) {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         loadGroups();
+        bootstrapFilters();
     } catch (error) {
-        alert('Ошибка удаления группы');
+        console.log('Ошибка удаления группы');
     }
 }
 
-// ============ ДИСЦИПЛИНЫ ============
+
 
 async function loadDisciplines() {
     try {
@@ -289,6 +432,7 @@ document.getElementById('disciplineForm').addEventListener('submit', async (e) =
         setTimeout(() => {
             closeModal('disciplineModal');
             loadDisciplines();
+            bootstrapFilters();
         }, 1500);
     } catch (error) {
         alertDiv.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}</div>`;
@@ -296,7 +440,7 @@ document.getElementById('disciplineForm').addEventListener('submit', async (e) =
 });
 
 async function deleteDiscipline(id) {
-
+    if (!confirm('Удалить дисциплину? Это также удалит все связанные расписания!')) return;
 
     try {
         await fetch(`/api/admin/disciplines/${id}`, {
@@ -304,11 +448,13 @@ async function deleteDiscipline(id) {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         loadDisciplines();
+        bootstrapFilters();
+        toast.success('Дисциплина удалена', 'Готово');
     } catch (error) {
-        alert('Ошибка удаления дисциплины');
+        toast.error('Ошибка удаления дисциплины', 'Ошибка');
     }
 }
-// ============ СЕМЕСТРЫ ============
+
 
 async function loadSemesters() {
     try {
@@ -377,8 +523,6 @@ document.getElementById('semesterForm').addEventListener('submit', async (e) => 
 });
 
 async function activateSemester(id) {
-    if (!confirm('Сделать этот семестр активным? Предыдущий активный семестр будет деактивирован.')) return;
-
     try {
         await fetch(`/api/admin/semesters/${id}/activate`, {
             method: 'POST',
@@ -386,7 +530,7 @@ async function activateSemester(id) {
         });
         loadSemesters();
     } catch (error) {
-        alert('Ошибка активации семестра');
+        console.log('Ошибка активации семестра');
     }
 }
 
@@ -400,62 +544,142 @@ async function deleteSemester(id) {
         });
         loadSemesters();
     } catch (error) {
-        alert('Ошибка удаления семестра');
+        console.log('Ошибка удаления семестра');
     }
 }
 
 
-// ============ РАСПИСАНИЕ ============
 
-function selectWeek(weekType) {
+
+function selectWeek(weekType, element) {
     currentWeekFilter = weekType;
     document.querySelectorAll('.week-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-    loadScheduleTemplates();
+    if (element) {
+        element.classList.add('active');
+    }
+    schedulePage = 1;
+    loadScheduleTemplates({ resetPage: true });
 }
 
-async function loadScheduleTemplates() {
+async function loadScheduleTemplates(options = {}) {
+    const { resetPage = false } = options;
+    if (resetPage) {
+        schedulePage = 1;
+    }
+
     try {
-        const templates = await apiRequest('/api/admin/schedule-templates');
-        const grid = document.getElementById('scheduleGrid');
+        const params = new URLSearchParams({
+            page: schedulePage,
+            page_size: SCHEDULE_PAGE_SIZE,
+            week_type: currentWeekFilter
+        });
 
-        const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-        const filtered = templates.filter(t =>
-            currentWeekFilter === 'both' ? true :
-            t.week_type === 'both' || t.week_type === currentWeekFilter
-        );
+        if (scheduleFilters.discipline_id) params.append('discipline_id', scheduleFilters.discipline_id);
+        if (scheduleFilters.teacher_id) params.append('teacher_id', scheduleFilters.teacher_id);
+        if (scheduleFilters.group_id) params.append('group_id', scheduleFilters.group_id);
 
-        let html = '';
-        for (let day = 0; day < 6; day++) {
-            const dayTemplates = filtered.filter(t => t.day_of_week === day);
-            html += `
-                <div class="day-column">
-                    <div class="day-header">${days[day]}</div>
-                    ${dayTemplates.map(t => `
-                        <div class="lesson-card">
-                            <div class="lesson-time">${t.time_start} - ${t.time_end}</div>
-                            <div><strong>${t.discipline}</strong></div>
-                            <div>${t.lesson_type} | ${t.classroom}</div>
-                            <div style="font-size: 10px; color: #666;">${t.teacher}</div>
-                            <div style="font-size: 10px;">
-                                <span class="badge badge-purple">${t.week_type === 'both' ? 'Обе' : t.week_type === 'odd' ? 'Нечет' : 'Чет'}</span>
-                            </div>
-                            <button class="btn btn-danger" style="margin-top: 5px; padding: 4px 8px; font-size: 10px;" 
-                                    onclick="deleteTemplate(${t.id})">Удалить</button>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
+        const response = await apiRequest(`/api/admin/schedule-templates?${params.toString()}`);
+        if (!response) return;
+
+        const meta = response.meta || { page: 1, pages: 1, total: 0 };
+        if (meta.pages && schedulePage > meta.pages && meta.total > 0) {
+            schedulePage = meta.pages;
+            return loadScheduleTemplates();
         }
 
-        grid.innerHTML = html || '<p style="grid-column: 1/-1; text-align: center; color: #999;">Расписание пусто</p>';
+        renderScheduleGrid(response.items || []);
+        updateSchedulePagination(meta);
     } catch (error) {
         console.error('Ошибка загрузки расписания:', error);
     }
 }
 
+function renderScheduleGrid(templates = []) {
+    const grid = document.getElementById('scheduleGrid');
+    if (!grid) return;
+
+    const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+    const buckets = Array.from({ length: 6 }, () => []);
+
+    (templates || []).forEach(template => {
+        if (template.day_of_week >= 0 && template.day_of_week < buckets.length) {
+            buckets[template.day_of_week].push(template);
+        }
+    });
+
+    let html = '';
+    for (let day = 0; day < buckets.length; day++) {
+        const dayTemplates = buckets[day];
+        dayTemplates.sort((a, b) => a.time_start.localeCompare(b.time_start));
+        html += `
+            <div class="day-column">
+                <div class="day-header">${days[day]}</div>
+                ${dayTemplates.length === 0 ? '<div class="empty-day">Нет занятий</div>' : dayTemplates.map(t => `
+                    <div class="lesson-card">
+                        <div class="lesson-time">${t.time_start} - ${t.time_end}</div>
+                        <div><strong>${t.discipline}</strong></div>
+                        <div>${t.lesson_type} | ${t.classroom}</div>
+                        <div style="font-size: 10px; color: #666;">${t.teacher}</div>
+                        <div style="font-size: 10px;">
+                            <span class="badge badge-purple">${t.week_type === 'both' ? 'Обе' : t.week_type === 'odd' ? 'Нечет' : 'Чет'}</span>
+                        </div>
+                        <div style="font-size: 10px; color: #555;">Группы: ${t.groups.map(g => g.name).join(', ')}</div>
+                        <button class="btn btn-danger" style="margin-top: 5px; padding: 4px 8px; font-size: 10px;" onclick="deleteTemplate(${t.id})">Удалить</button>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    grid.innerHTML = html || '<p style="grid-column: 1/-1; text-align: center; color: #999;">Расписание пусто</p>';
+}
+
+function applyScheduleFilters() {
+    scheduleFilters.discipline_id = document.getElementById('scheduleFilterDiscipline')?.value || '';
+    scheduleFilters.teacher_id = document.getElementById('scheduleFilterTeacher')?.value || '';
+    scheduleFilters.group_id = document.getElementById('scheduleFilterGroup')?.value || '';
+    loadScheduleTemplates({ resetPage: true });
+}
+
+function resetScheduleFilters() {
+    const disciplineSelect = document.getElementById('scheduleFilterDiscipline');
+    const teacherSelect = document.getElementById('scheduleFilterTeacher');
+    const groupSelect = document.getElementById('scheduleFilterGroup');
+    if (disciplineSelect) disciplineSelect.value = '';
+    if (teacherSelect) teacherSelect.value = '';
+    if (groupSelect) groupSelect.value = '';
+    scheduleFilters = { discipline_id: '', teacher_id: '', group_id: '' };
+    loadScheduleTemplates({ resetPage: true });
+}
+
+function changeSchedulePage(direction) {
+    const nextPage = schedulePage + direction;
+    if (nextPage < 1 || nextPage > scheduleTotalPages) return;
+    schedulePage = nextPage;
+    loadScheduleTemplates();
+}
+
+function updateSchedulePagination(meta = { page: 1, pages: 1 }) {
+    schedulePage = meta.page || 1;
+    scheduleTotalPages = meta.pages || 1;
+
+    const info = document.getElementById('schedulePageInfo');
+    const prevBtn = document.getElementById('schedulePrevBtn');
+    const nextBtn = document.getElementById('scheduleNextBtn');
+
+    if (info) {
+        info.textContent = `Стр. ${schedulePage} из ${scheduleTotalPages}`;
+    }
+    if (prevBtn) {
+        prevBtn.disabled = schedulePage <= 1;
+    }
+    if (nextBtn) {
+        nextBtn.disabled = schedulePage >= scheduleTotalPages;
+    }
+}
+
 async function openScheduleModal() {
-    // Загружаем данные для селектов
+
     const [disciplines, groups, teachers] = await Promise.all([
         apiRequest('/api/disciplines'),
         apiRequest('/api/groups'),
@@ -524,7 +748,7 @@ async function deleteTemplate(id) {
         });
         loadScheduleTemplates();
     } catch (error) {
-        alert('Ошибка удаления занятия');
+        console.log('Ошибка удаления занятия');
     }
 }
 
@@ -538,18 +762,144 @@ async function generateInstances() {
         });
 
         const data = await result.json();
-        alert(`Успешно сгенерировано ${data.count} занятий!`);
+        console.log(`Успешно сгенерировано ${data.count} занятий!`);
+        loadScheduleTemplates();
     } catch (error) {
-        alert('Ошибка генерации занятий');
+        console.log('Ошибка генерации занятий');
     }
 }
 
-// Закрытие модального окна
+async function downloadJournalReport(format = null) {
+    const groupId = document.getElementById('reportGroupSelect')?.value;
+    const dateFrom = document.getElementById('reportDateFrom')?.value;
+    const dateTo = document.getElementById('reportDateTo')?.value;
+    const disciplineId = document.getElementById('reportDisciplineSelect')?.value;
+    const formatSelect = document.getElementById('reportFormatSelect');
+    const exportFormat = format || (formatSelect ? formatSelect.value : 'csv');
+
+    if (!groupId || !dateFrom || !dateTo) {
+        console.log('Пожалуйста, выберите группу и диапазон дат');
+        return;
+    }
+
+    const params = new URLSearchParams({
+        group_id: groupId,
+        date_from: dateFrom,
+        date_to: dateTo,
+        format: exportFormat
+    });
+    if (disciplineId) params.append('discipline_id', disciplineId);
+
+    try {
+        const response = await fetch(`/api/reports/journal?${params.toString()}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            let errorMessage = 'Не удалось сформировать отчёт';
+            try {
+                const err = await response.json();
+                errorMessage = err.detail || errorMessage;
+            } catch (_) {  }
+            throw new Error(errorMessage);
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const extension = exportFormat === 'xlsx' ? 'xlsx' : exportFormat === 'json' ? 'json' : 'csv';
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `journal_${dateFrom}_${dateTo}.${extension}`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.log(error.message);
+    }
+}
+
+async function showSummaryReport() {
+    const groupId = document.getElementById('reportGroupSelect')?.value;
+    const dateFrom = document.getElementById('reportDateFrom')?.value;
+    const dateTo = document.getElementById('reportDateTo')?.value;
+    const disciplineId = document.getElementById('reportDisciplineSelect')?.value;
+
+    if (!groupId || !dateFrom || !dateTo) {
+        console.log('Пожалуйста, выберите группу и диапазон дат');
+        return;
+    }
+
+    const params = new URLSearchParams({
+        group_id: groupId,
+        date_from: dateFrom,
+        date_to: dateTo
+    });
+    if (disciplineId) params.append('discipline_id', disciplineId);
+
+    try {
+        const summary = await apiRequest(`/api/reports/summary?${params.toString()}`);
+        renderSummaryReport(summary);
+    } catch (error) {
+        console.error('Ошибка получения сводки:', error);
+        console.log('Не удалось получить сводку. Попробуйте позже.');
+    }
+}
+
+function renderSummaryReport(summary) {
+    const container = document.getElementById('summaryReportContainer');
+    if (!container) return;
+
+    if (!summary) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+    }
+
+    const byStatus = summary.attendance?.by_status || {};
+    const present = (byStatus.present || 0) + (byStatus.auto_detected || 0) + (byStatus.fingerprint_detected || 0);
+    const absent = byStatus.absent || 0;
+    const excused = byStatus.excused || 0;
+    const missing = byStatus.missing || 0;
+    const attendanceRate = summary.attendance?.attendance_rate
+        ? `${(summary.attendance.attendance_rate * 100).toFixed(1)}%`
+        : '0%';
+
+    const averages = (summary.grades?.student_averages || [])
+        .filter(item => item.average_grade !== null)
+        .sort((a, b) => (b.average_grade || 0) - (a.average_grade || 0))
+        .slice(0, 5);
+
+    container.innerHTML = `
+        <p><strong>Группа:</strong> ${summary.group?.name || '-'}</p>
+        <p><strong>Период:</strong> ${summary.period?.from || ''} — ${summary.period?.to || ''}</p>
+        <div class="summary-grid">
+            <div class="summary-item"><span>Занятий</span><strong>${summary.lessons_found || 0}</strong></div>
+            <div class="summary-item"><span>Посещаемость</span><strong>${attendanceRate}</strong></div>
+            <div class="summary-item"><span>Присутствий</span><strong>${present}</strong></div>
+            <div class="summary-item"><span>Отсутствий</span><strong>${absent}</strong></div>
+            <div class="summary-item"><span>Уважительно</span><strong>${excused}</strong></div>
+            <div class="summary-item"><span>Не отмечено</span><strong>${missing}</strong></div>
+            <div class="summary-item"><span>Средний балл</span><strong>${summary.grades?.overall_average ?? '—'}</strong></div>
+        </div>
+        ${averages.length ? `
+            <div style="margin-top: 15px;">
+                <strong>Лидеры по успеваемости:</strong>
+                <ul style="margin-top: 8px; padding-left: 18px;">
+                    ${averages.map(item => `<li>${item.student_name} — ${item.average_grade}</li>`).join('')}
+                </ul>
+            </div>
+        ` : ''}
+    `;
+    container.style.display = 'block';
+}
+
+
 function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
 }
 
-// ============ ЗАГРУЗКА ФОТО СТУДЕНТА ============
+
 
 let currentStudentForFaceUpload = null;
 let selectedFaceFile = null;
@@ -563,13 +913,13 @@ function openUploadFaceModal(studentId, studentName) {
     document.getElementById('uploadFaceModal').classList.add('active');
 }
 
-// Обработка выбора файла для фото студента
+
 document.getElementById('faceFileInput').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file && file.type.startsWith('image/')) {
         selectedFaceFile = file;
 
-        // Показываем превью
+
         const reader = new FileReader();
         reader.onload = function(event) {
             const preview = document.getElementById('facePreview');
@@ -579,13 +929,13 @@ document.getElementById('faceFileInput').addEventListener('change', function(e) 
         };
         reader.readAsDataURL(file);
     } else {
-        alert('Пожалуйста, выберите изображение');
+        console.log('Пожалуйста, выберите изображение');
     }
 });
 
 async function uploadStudentFace() {
     if (!selectedFaceFile || !currentStudentForFaceUpload) {
-        alert('Выберите фото для загрузки');
+        console.log('Выберите фото для загрузки');
         return;
     }
 
@@ -611,21 +961,36 @@ async function uploadStudentFace() {
         }
 
         const result = await response.json();
-        alert(result.message);
+        console.log(result.message);
         closeModal('uploadFaceModal');
-        loadStudents(); // Перезагружаем список студентов
+        loadStudents(); 
     } catch (error) {
         console.error('Ошибка загрузки фото:', error);
-        alert('Ошибка: ' + error.message);
+        console.log('Ошибка: ' + error.message);
     } finally {
         btn.disabled = false;
         btn.textContent = 'Загрузить';
     }
 }
 
-// Инициализация
-document.addEventListener('DOMContentLoaded', () => {
+
+document.addEventListener('DOMContentLoaded', async () => {
     loadUserInfo();
-    loadStudents();
+    await bootstrapFilters();
+    loadStudents({ resetPage: true });
+
+    const searchInput = document.getElementById('studentSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                applyStudentFilters();
+            }
+        });
+    }
+
+    const groupFilter = document.getElementById('studentGroupFilter');
+    if (groupFilter) {
+        groupFilter.addEventListener('change', applyStudentFilters);
+    }
 });
 

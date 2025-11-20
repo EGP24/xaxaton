@@ -35,9 +35,38 @@ class StudentResponse(BaseModel):
     id: int
     full_name: str
     group_id: int
+    has_fingerprint: bool = False
 
     class Config:
         from_attributes = True
+
+
+class StudentWithFingerprintResponse(BaseModel):
+    id: int
+    full_name: str
+    group_id: int
+    fingerprint_template: str
+
+    class Config:
+        from_attributes = True
+
+
+class FingerprintEnrollRequest(BaseModel):
+    student_id: int
+    fingerprint_template: str
+
+
+class FingerprintScanRequest(BaseModel):
+    classroom: str
+    student_id: int
+
+
+class FingerprintIdentifyResponse(BaseModel):
+    success: bool
+    student_id: Optional[int] = None
+    student_name: Optional[str] = None
+    schedule_instance_id: Optional[int] = None
+    message: str
 
 
 class GroupCreate(BaseModel):

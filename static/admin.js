@@ -1,21 +1,21 @@
-// Основные переменные
+
 let token = localStorage.getItem('token');
 let currentGroup = null;
 let currentDiscipline = null;
 let schedulesByDate = {};
 
-// Проверка авторизации
+
 if (!token) {
     window.location.href = '/login';
 }
 
-// Функция выхода
+
 function logout() {
     localStorage.removeItem('token');
     window.location.href = '/login';
 }
 
-// API запросы
+
 async function apiRequest(url, options = {}) {
     try {
         const response = await fetch(url, {
@@ -42,7 +42,7 @@ async function apiRequest(url, options = {}) {
     }
 }
 
-// Загрузка информации о пользователе
+
 async function loadUserInfo() {
     try {
         const user = await apiRequest('/api/me');
@@ -61,7 +61,7 @@ async function loadUserInfo() {
     }
 }
 
-// Загрузка списка групп
+
 async function loadGroups() {
     try {
         const groups = await apiRequest('/api/groups');
@@ -81,7 +81,7 @@ async function loadGroups() {
     }
 }
 
-// Загрузка дисциплин для группы
+
 async function loadDisciplinesForGroup(groupId) {
     try {
         const schedules = await apiRequest(`/api/schedules?group_id=${groupId}`);
@@ -116,7 +116,7 @@ async function loadDisciplinesForGroup(groupId) {
     }
 }
 
-// Обработчик изменения группы
+
 document.getElementById('groupSelect').addEventListener('change', async (e) => {
     currentGroup = e.target.value;
     currentDiscipline = null;
@@ -130,7 +130,7 @@ document.getElementById('groupSelect').addEventListener('change', async (e) => {
     }
 });
 
-// Обработчик изменения дисциплины
+
 document.getElementById('disciplineSelect').addEventListener('change', async (e) => {
     currentDiscipline = e.target.value;
 
@@ -141,21 +141,21 @@ document.getElementById('disciplineSelect').addEventListener('change', async (e)
     }
 });
 
-// Показать сообщение "нет данных"
+
 function showNoData() {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('noData').style.display = 'block';
     document.getElementById('journalTable').style.display = 'none';
 }
 
-// Показать загрузку
+
 function showLoading() {
     document.getElementById('loading').style.display = 'block';
     document.getElementById('noData').style.display = 'none';
     document.getElementById('journalTable').style.display = 'none';
 }
 
-// Сохранение статуса студента
+
 async function saveRecord(studentId, scheduleId, status, grade = null) {
     try {
         const formData = new URLSearchParams();
@@ -179,7 +179,7 @@ async function saveRecord(studentId, scheduleId, status, grade = null) {
     }
 }
 
-// Загрузка журнала
+
 async function loadJournal() {
     console.log('=== Начало загрузки журнала ===');
     showLoading();
@@ -253,11 +253,11 @@ async function loadJournal() {
         console.error('Ошибка загрузки журнала:', error);
         console.error('Stack:', error.stack);
         showNoData();
-        alert('Ошибка загрузки журнала: ' + error.message);
+        console.log('Ошибка загрузки журнала: ' + error.message);
     }
 }
 
-// Построение таблицы журнала
+
 function buildJournalTable(students, schedulesByDate, recordsMap, allSchedules) {
     console.log('buildJournalTable вызвана');
 
@@ -393,6 +393,9 @@ function buildJournalTable(students, schedulesByDate, recordsMap, allSchedules) 
                     } else if (record.status === 'auto_detected') {
                         displayValue = 'А';
                         cellClass = 'status-auto';
+                    } else if (record.status === 'fingerprint_detected') {
+                        displayValue = 'О';
+                        cellClass = 'status-fingerprint';
                     }
 
                     const readonlyAttr = canEdit ? '' : 'readonly';
@@ -433,7 +436,7 @@ function buildJournalTable(students, schedulesByDate, recordsMap, allSchedules) 
     console.log('Таблица построена, обработчики добавлены');
 }
 
-// Обновление средних оценок для студента
+
 function updateAverages(studentId) {
     const studentRow = document.querySelector(`tr:has(input[data-student-id="${studentId}"])`);
     if (!studentRow) return;
@@ -489,7 +492,7 @@ function updateAverages(studentId) {
     }
 }
 
-// Добавление обработчиков событий для ячеек
+
 function attachEventHandlers() {
     document.querySelectorAll('.status-input').forEach(input => {
         const canEdit = input.dataset.canEdit === 'true';
@@ -526,13 +529,25 @@ function attachEventHandlers() {
                 grade = null;
                 e.target.value = 'А';
                 e.target.className = 'status-input status-auto';
+            } else if (value === 'О' || value === 'о' || value === 'Ф' || value === 'ф') {
+                status = 'fingerprint_detected';
+                grade = null;
+                e.target.value = 'О';
+                e.target.className = 'status-input status-fingerprint';
             } else {
-                const numValue = parseFloat(value.replace(',', '.'));
-                if (!isNaN(numValue)) {
+                const sanitized = value.replace(',', '.');
+                const numValue = Number(sanitized);
+                if (
+                    !Number.isNaN(numValue) &&
+                    Number.isInteger(numValue) &&
+                    numValue >= 2 &&
+                    numValue <= 5
+                ) {
                     status = null;
                     grade = numValue;
                     e.target.className = 'status-input';
                 } else {
+                    console.log('Оценка должна быть целым числом от 2 до 5');
                     e.target.value = '';
                     e.target.className = 'status-input';
                     return;
@@ -574,7 +589,7 @@ function attachEventHandlers() {
     });
 }
 
-// ============ Функционал загрузки фото и распознавания лиц ============
+
 
 let selectedPhoto = null;
 let currentScheduleForRecognition = null;
@@ -612,7 +627,7 @@ function initPhotoUpload() {
         selectDate.onchange = () => {
             const date = selectDate.value;
             if (date) {
-                // Проверяем, есть ли занятия на выбранную дату
+
                 if (schedulesByDate[date]) {
                     populateSchedulesForDate(date);
                     if (selectScheduleGroup) selectScheduleGroup.style.display = 'block';
@@ -623,7 +638,7 @@ function initPhotoUpload() {
                     const statsDiv = document.getElementById('recognitionStats');
                     if (statsDiv) statsDiv.style.display = 'none';
                 } else {
-                    alert('На выбранную дату нет занятий. Пожалуйста, выберите другую дату.');
+                    console.log('На выбранную дату нет занятий. Пожалуйста, выберите другую дату.');
                     selectDate.value = '';
                     if (selectScheduleGroup) selectScheduleGroup.style.display = 'none';
                     if (uploadArea) uploadArea.style.display = 'none';
@@ -703,22 +718,22 @@ function populateDates() {
     const dateHint = document.getElementById('dateHint');
     if (!selectDate) return;
 
-    // Получаем все доступные даты с редактируемыми парами
+
     const availableDates = Object.keys(schedulesByDate)
         .filter(date => {
             const schedules = schedulesByDate[date];
-            // Оставляем только даты, где есть хотя бы одна редактируемая пара
+
             return schedules.some(s => s.can_edit && s.is_past);
         })
         .sort();
 
     if (availableDates.length > 0) {
-        // Устанавливаем минимальную и максимальную даты
+
         selectDate.min = availableDates[0];
         selectDate.max = availableDates[availableDates.length - 1];
         selectDate.disabled = false;
 
-        // Обновляем подсказку
+
         const minDateObj = new Date(availableDates[0] + 'T00:00:00');
         const maxDateObj = new Date(availableDates[availableDates.length - 1] + 'T00:00:00');
         const minDateStr = minDateObj.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
@@ -736,7 +751,7 @@ function populateDates() {
         selectDate.disabled = true;
     }
 
-    // Очищаем выбор
+
     selectDate.value = '';
 }
 
@@ -749,7 +764,7 @@ function populateSchedulesForDate(date) {
     const schedules = schedulesByDate[date];
     if (!schedules) return;
 
-    // Фильтруем только доступные для редактирования пары
+
     const editableSchedules = schedules.filter(s => s.can_edit && s.is_past);
     let hasOptions = false;
 
@@ -776,20 +791,20 @@ function populateSchedulesForDate(date) {
         selectSchedule.appendChild(option);
     });
 
-    // Автоматически выбираем пару, если она одна и доступна для редактирования
+
     if (editableSchedules.length === 1) {
         selectSchedule.value = editableSchedules[0].id;
         currentScheduleForRecognition = editableSchedules[0].id;
         if (uploadArea) uploadArea.style.display = 'block';
 
-        // Показываем уведомление пользователю
+
         const dateHint = document.getElementById('dateHint');
         if (dateHint) {
             dateHint.textContent = `✅ Автоматически выбрана единственная доступная пара: ${editableSchedules[0].lesson_type} в ${editableSchedules[0].time_start}`;
             dateHint.className = 'date-hint';
         }
     } else if (editableSchedules.length === 0) {
-        // Если нет доступных пар
+
         const dateHint = document.getElementById('dateHint');
         if (dateHint) {
             dateHint.textContent = '⚠️ На выбранную дату нет доступных для редактирования пар';
@@ -797,7 +812,7 @@ function populateSchedulesForDate(date) {
         }
         selectSchedule.disabled = true;
     } else {
-        // Если пар несколько - предлагаем выбрать
+
         const dateHint = document.getElementById('dateHint');
         if (dateHint) {
             dateHint.textContent = `📋 На выбранную дату найдено занятий: ${editableSchedules.length}. Выберите нужную пару.`;
@@ -809,7 +824,7 @@ function populateSchedulesForDate(date) {
 
 function handlePhotoSelect(file) {
     if (!file.type.startsWith('image/')) {
-        alert('Пожалуйста, выберите изображение');
+        console.log('Пожалуйста, выберите изображение');
         return;
     }
 
@@ -832,7 +847,7 @@ function handlePhotoSelect(file) {
 
 async function performRecognition() {
     if (!selectedPhoto || !currentScheduleForRecognition) {
-        alert('Ошибка: не выбрано фото или занятие');
+        console.log('Ошибка: не выбрано фото или занятие');
         return;
     }
 
@@ -872,7 +887,7 @@ async function performRecognition() {
 
         await loadJournal();
 
-        alert(`Успешно распознано ${result.recognized_count} студентов из ${result.total_students}`);
+        console.log(`Успешно распознано ${result.recognized_count} студентов из ${result.total_students}`);
 
         setTimeout(() => {
             const modal = document.getElementById('uploadModal');
@@ -881,7 +896,7 @@ async function performRecognition() {
 
     } catch (error) {
         console.error('Ошибка распознавания:', error);
-        alert('Ошибка при распознавании лиц. Попробуйте еще раз.');
+        console.log('Ошибка при распознавании лиц. Попробуйте еще раз.');
     } finally {
         if (recognizeBtn) {
             recognizeBtn.disabled = false;
@@ -890,7 +905,49 @@ async function performRecognition() {
     }
 }
 
-// Инициализация
+
+
+function searchInTable(query) {
+    const table = document.getElementById('journalTable');
+    const tbody = document.getElementById('tableBody');
+
+    if (!table || !tbody || !query) {
+
+        if (tbody) {
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach(row => {
+                row.style.display = '';
+            });
+        }
+        return;
+    }
+
+    const searchLower = query.toLowerCase().trim();
+    const rows = tbody.querySelectorAll('tr');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+
+        const studentNameCell = row.querySelector('.student-name');
+        if (studentNameCell) {
+            const studentName = studentNameCell.textContent.toLowerCase();
+
+            if (studentName.includes(searchLower)) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    });
+
+
+    if (visibleCount === 0 && rows.length > 0) {
+        toast.info(`Студенты с "${query}" не найдены`, 'Поиск');
+    }
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM загружен, инициализация...');
     loadUserInfo();
